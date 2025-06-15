@@ -12,12 +12,28 @@ from authlib.integrations.flask_client import OAuth
 import google.generativeai as genai
 from dotenv import load_dotenv
 
+class ReverseProxied(object):
+    """
+    一個 WSGI 中間件，用於修正反向代理後的 URL scheme。
+    它會讀取 X-Forwarded-Proto 標頭並相應地更新 wsgi.url_scheme。
+    """
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        scheme = environ.get('HTTP_X_FORWARDED_PROTO')
+        if scheme:
+            environ['wsgi.url_scheme'] = scheme
+        return self.app(environ, start_response)
+
 # 在建立 app 實例之前載入 .env 檔案中的環境變數
 load_dotenv()
 
 app = Flask(__name__)
 # SECRET_KEY 是 Flask session 加密和 Authlib 所必需的
 # 現在 os.environ.get 可以讀取到 .env 檔案中的值了
+
+app.wsgi_app = ReverseProxied(app.wsgi_app)
 app.secret_key = os.environ.get('SECRET_KEY')
 app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME') # 用於生成絕對 URL
 
@@ -198,10 +214,20 @@ def index():
     # 將 session 傳遞給模板，以便前端判斷登入狀態
     return render_template('index.html', session=session.get('user'))
 
+# 在 app.py 中找到 login 函數
+
 @app.route('/login')
 def login():
     # 重定向到 Google 登入頁面
     redirect_uri = url_for('callback', _external=True)
+    
+    # --- 除錯程式碼 ---
+    # 這個 print 語句的輸出會顯示在 Render 的 Log 中
+    print("="*50)
+    print(f"RENDER SERVER is generating this redirect_uri: {redirect_uri}")
+    print("="*50)
+    # --- 除錯結束 ---
+    
     return google.authorize_redirect(redirect_uri)
 
 @app.route('/callback')
