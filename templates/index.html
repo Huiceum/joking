@@ -864,6 +864,9 @@ config:ics_repeat=3m
         </div>
     </div>
 
+<!-- ... 你 index.html 的其他所有內容保持不變 ... -->
+<!-- 只需用下面的程式碼塊替換你現有的 <script> 標籤 -->
+
 <script>
     // 將需要在全域範圍內訪問的函數定義在頂層
     function toggleTheme() {
@@ -1015,7 +1018,10 @@ config:ics_repeat=3m
             const dayHeaders = Array.from(grid.querySelectorAll(".grid-header"));
 
             timeSlots.forEach(slot => {
-                slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse", "expanded");
+                // --- FIX: 在重置時，不要移除 'expanded' class，這樣才能保留用戶的展開狀態 ---
+                slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse");
+                // --- END FIX ---
+                
                 slot.style.display = 'flex';
                 slot.querySelector('.content-normal').style.display = 'flex';
                 slot.querySelector('.content-collapsed').style.display = 'none';
@@ -1234,26 +1240,26 @@ config:ics_repeat=3m
             return messageElement;
         }
 
-// 修改後的程式碼 (覆蓋模式)
-function parseAndApplySchedule(text) {
-    const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
-    const match = text.match(scheduleRegex);
+        // 修改後的程式碼 (覆蓋模式)
+        function parseAndApplySchedule(text) {
+            const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
+            const match = text.match(scheduleRegex);
 
-    if (match && match[1]) {
-        const newEntries = match[1].trim();
-        
-        // 直接將 textarea 的值設定為 AI 產生的內容，實現覆蓋效果
-        scheduleTextarea.value = newEntries + '\n'; 
-        
-        // 同時，更新提示訊息，讓使用者更清楚發生了什麼事
-        const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容！');
-        setTimeout(() => {
-            notification.style.transition = 'opacity 0.5s';
-            notification.style.opacity = '0';
-            setTimeout(() => notification.remove(), 500);
-        }, 3000);
-    }
-}
+            if (match && match[1]) {
+                const newEntries = match[1].trim();
+                
+                // 直接將 textarea 的值設定為 AI 產生的內容，實現覆蓋效果
+                scheduleTextarea.value = newEntries + '\n'; 
+                
+                // 同時，更新提示訊息，讓使用者更清楚發生了什麼事
+                const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容！');
+                setTimeout(() => {
+                    notification.style.transition = 'opacity 0.5s';
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 500);
+                }, 3000);
+            }
+        }
 
         // --- Tooltip Logic ---
         let tooltipVisible = false;
@@ -1438,7 +1444,6 @@ function parseAndApplySchedule(text) {
         }
 
         if (chatForm) {
-            // --- MODIFIED: 修改 chatForm 的 submit 事件監聽器以處理使用上限 ---
             chatForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const message = chatInput.value.trim();
@@ -1463,26 +1468,19 @@ function parseAndApplySchedule(text) {
                     
                     typingIndicator.remove();
 
-                    // --- NEW: 處理不同的回應狀態 ---
                     if (!response.ok) {
                         const error = await response.json();
                         
-                        // 檢查是否是 403 (已達上限) 錯誤
                         if (response.status === 403) {
                             addMessageToChat('ai', error.error || '您已達到使用次數上限。');
-                            // 保持輸入框和按鈕禁用
                             chatInput.placeholder = "已達使用上限";
-                            // 我們在這裡不 re-enable 輸入框和按鈕
                         } else {
-                            // 處理其他錯誤
                             addMessageToChat('ai', `發生錯誤: ${error.error || '無法連接伺服器'}`);
-                             // 對於其他錯誤，重新啟用輸入
                             chatInput.disabled = false;
                             sendButton.disabled = false;
                         }
-                        return; // 終止後續程式碼執行
+                        return;
                     }
-                    // --- END NEW ---
 
                     const data = await response.json();
                     const aiReply = data.reply;
@@ -1496,12 +1494,10 @@ function parseAndApplySchedule(text) {
                     typingIndicator.remove();
                     addMessageToChat('ai', `客戶端錯誤: ${error.message}`);
                 } finally {
-                    // --- MODIFIED: 只有在沒有達到上限時才重新啟用輸入框 ---
-                    // 檢查輸入框是否仍被禁用（被 403 錯誤鎖定）
                     if (chatInput.placeholder !== "已達使用上限") {
                         chatInput.disabled = false;
                         sendButton.disabled = false;
-                        chatInput.focus(); // 讓使用者可以繼續輸入
+                        chatInput.focus();
                     }
                 }
             });
