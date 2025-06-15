@@ -899,7 +899,8 @@ config:ics_repeat=3m
         let chatHistory = []; // 用來保存對話歷史
 
         // --- DOM 元素獲取 ---
-        const themeToggleBtn = document.querySelector('.theme-toggle');
+        // 修改為下面這一行
+        const themeToggleBtn = document.getElementById('themeToggle');
         const scheduleDataContainer = document.getElementById('scheduleData');
         const scheduleForm = document.getElementById("scheduleForm");
         const tooltip = document.getElementById('activity-tooltip');
