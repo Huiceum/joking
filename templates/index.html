@@ -706,7 +706,6 @@
     <div class="user-profile">
         {% if session %}
         <div id="userInfo">
-            <img src="{{ session.picture }}" alt="User Avatar" class="avatar">
             <span class="username">{{ session.name }}</span>
             <a href="{{ url_for('logout') }}" class="logout-btn">登出</a>
         </div>
