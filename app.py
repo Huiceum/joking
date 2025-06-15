@@ -11,6 +11,7 @@ import calendar
 from authlib.integrations.flask_client import OAuth
 import google.generativeai as genai
 from dotenv import load_dotenv
+import sqlite3 # --- NEW: 引入 sqlite3 模組
 
 class ReverseProxied(object):
     """
@@ -36,6 +37,33 @@ app = Flask(__name__)
 app.wsgi_app = ReverseProxied(app.wsgi_app)
 app.secret_key = os.environ.get('SECRET_KEY')
 app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME') # 用於生成絕對 URL
+
+# --- NEW: 資料庫與使用限制設定 ---
+DATABASE = 'usage.db'
+MAX_AI_USAGE = 2  # 設定每個用戶最多能使用 20 次 AI
+
+def get_db_connection():
+    """建立並返回一個資料庫連線"""
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row # 讓查詢結果可以像字典一樣存取
+    return conn
+
+def init_db():
+    """初始化資料庫，如果 user_usage 表不存在則建立它"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS user_usage (
+            email TEXT PRIMARY KEY,
+            usage_count INTEGER NOT NULL DEFAULT 0,
+            last_used TIMESTAMP NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+    print("Database initialized.")
+# --- END NEW ---
+
 
 # --- OAuth 設定 ---
 oauth = OAuth(app)
@@ -244,12 +272,35 @@ def logout():
     session.pop('user', None) # 清除 session 中的用戶資訊
     return redirect(url_for('index'))
 
+# --- MODIFIED: 修改 /api/chat 路由以整合使用次數限制 ---
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
     if 'user' not in session:
         return jsonify({"error": "Not authenticated"}), 401
+    
+    # --- NEW: 檢查使用次數 ---
+    user_email = session['user'].get('email')
+    if not user_email:
+        return jsonify({"error": "User email not found in session"}), 401
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT usage_count FROM user_usage WHERE email = ?', (user_email,)).fetchone()
+    
+    current_usage = user['usage_count'] if user else 0
+
+    if current_usage >= MAX_AI_USAGE:
+        conn.close()
+        # 使用 403 Forbidden 狀態碼表示權限問題 (已達上限)
+        remaining_count = MAX_AI_USAGE - current_usage
+        if remaining_count < 0:
+            remaining_count = 0
+        message = f"您好，您已達到 {MAX_AI_USAGE} 次的使用上限，剩餘次數：{remaining_count}。感謝您的使用！"
+        return jsonify({"error": message}), 403
+
+    # --- END NEW ---
 
     if not GEMINI_API_KEY:
+        conn.close() # 如果 API Key 不存在，也要關閉連線
         return jsonify({"error": "Gemini API key not configured on the server."}), 500
 
     data = request.get_json()
@@ -257,12 +308,12 @@ def api_chat():
     chat_history = data.get('history', [])
 
     if not user_message:
+        conn.close() # 如果訊息為空，也要關閉連線
         return jsonify({"error": "Empty message"}), 400
 
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
         
-        # 系統提示 (System Prompt)
         system_prompt = {
             'role': 'user', 
             'parts': [
@@ -280,17 +331,34 @@ def api_chat():
         }
         model_greeting = {'role': 'model', 'parts': ["好的，我明白了。我會扮演好生活週習表諮詢師的角色，並在適當的時候使用指定的格式來總結行程。請問有什麼可以為您服務的嗎？"]}
         
-        # 組合完整的對話歷史
         full_history = [system_prompt, model_greeting] + chat_history
         
         chat = model.start_chat(history=full_history)
         response = chat.send_message(user_message)
+        
+        # --- NEW: 成功呼叫後，更新使用次數 ---
+        # 使用 UPSERT (UPDATE or INSERT) 語法
+        # 如果 email 已存在，就將 usage_count + 1
+        # 如果不存在，就插入一筆新的紀錄，usage_count 設為 1
+        conn.execute('''
+            INSERT INTO user_usage (email, usage_count, last_used)
+            VALUES (?, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT(email) DO UPDATE SET
+                usage_count = usage_count + 1,
+                last_used = CURRENT_TIMESTAMP
+        ''', (user_email,))
+        conn.commit()
+        # --- END NEW ---
         
         return jsonify({"reply": response.text})
 
     except Exception as e:
         app.logger.error(f"Gemini API error: {e}")
         return jsonify({"error": f"An error occurred with the AI service: {e}"}), 500
+    finally:
+        # --- NEW: 確保資料庫連線總是會被關閉 ---
+        if conn:
+            conn.close()
 
 @app.route('/api/generate', methods=['POST'])
 def api_generate():
@@ -371,8 +439,8 @@ def export_ics():
 
 # --- 啟動設定 ---
 if __name__ == '__main__':
-    # 建議在本地開發時開啟 debug 模式，但在生產環境中關閉
-    # debug=True 會自動重載程式碼，非常方便
-    # host='0.0.0.0' 讓區域網路中的其他設備也能訪問
+    # --- NEW: 在應用程式啟動時初始化資料庫 ---
+    init_db()
+    
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
