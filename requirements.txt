@@ -2,3 +2,6 @@ Flask
 pytz
 ics
 gunicorn
+Authlib
+google-generativeai
+python-dotenv

@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生活週習表生成器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Dark Theme (Default) */
+        :root {
+            --bg-color: #000000;
+            --surface-color: #1a1a1a;
+            --primary-accent-color: #5979b1;
+            --secondary-accent-color: #6b9bbb;
+            --text-color: #ffffff;
+            --text-muted-color: #cccccc;
+            --border-color: #333333;
+            --hover-glow: 0 0 20px rgba(107, 147, 214, 0.4);
+            --error-bg: rgba(248, 81, 73, 0.1);
+            --error-text: #f85149;
+            --success-bg: rgba(63, 185, 80, 0.1);
+            --success-text: #3fb950;
+            --dot-color: rgba(107, 147, 214, 0.2);
+            --icon-filter: brightness(0) invert(1);
+            --tooltip-bg: rgba(42, 42, 42, 0.6);
+            --tooltip-border: rgba(255, 255, 255, 0.1);
+            --tooltip-text: #ffffff;
+            /* Overlap Colors (Dark Theme) */
+            --overlap-color-0: #5979b1; /* Primary */
+            --overlap-color-1: #6b9bbb; /* Secondary */
+            --overlap-color-2: #7c4dff; /* Deep Purple */
+            --overlap-color-3: #ff6b35; /* Orange */
+            --overlap-color-4: #4caf50; /* Green */
+            --overlap-color-5: #ff9800; /* Amber */
+            --overlap-color-6: #00bcd4; /* Cyan */
+
+            /* Row Heights */
+            --normal-row-height: 25px;
+            --collapsed-block-height: 50px;
+        }
+
+        /* Light Theme */
+        [data-theme="light"] {
+            --bg-color: #ffffff;
+            --surface-color: #f5f5f5;
+            --primary-accent-color: #385682;
+            --secondary-accent-color: #4a5d96;
+            --text-color: #000000;
+            --text-muted-color: #666666;
+            --border-color: #e0e0e0;
+            --hover-glow: 0 0 20px rgba(74, 111, 165, 0.3);
+            --error-bg: rgba(220, 53, 69, 0.1);
+            --error-text: #dc3545;
+            --success-bg: rgba(40, 167, 69, 0.1);
+            --success-text: #28a745;
+            --dot-color: rgba(74, 111, 165, 0.15);
+            --icon-filter: brightness(0) invert(0);
+            --tooltip-bg: rgba(249, 249, 249, 0.7);
+            --tooltip-border: rgba(0, 0, 0, 0.1);
+            --tooltip-text: #333333;
+            /* Overlap Colors (Light Theme) */
+            --overlap-color-0: #385682; /* Primary */
+            --overlap-color-1: #4a5d96; /* Secondary */
+            --overlap-color-2: #5e35b1; /* Deep Purple */
+            --overlap-color-3: #e53935; /* Red */
+            --overlap-color-4: #43a047; /* Green */
+            --overlap-color-5: #fb8c00; /* Orange */
+            --overlap-color-6: #00acc1; /* Cyan */
+
+             /* Row Heights */
+            --normal-row-height: 25px;
+            --collapsed-block-height: 50px;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', Arial, sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+            background-size: 10px 10px;
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+        
+        .activity-tooltip {
+            position: fixed;
+            z-index: 9999;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 300px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            
+            /* Glassmorphism Effect */
+            background: var(--tooltip-bg);
+            border: 1px solid var(--tooltip-border);
+            backdrop-filter: blur(10px) saturate(180%);
+            -webkit-backdrop-filter: blur(10px) saturate(180%);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            color: var(--tooltip-text);
+
+            /* Transitions and initial state */
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none; /* Crucial: lets mouse events pass through */
+            display: none;
+        }
+
+        .activity-tooltip.visible {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--surface-color);
+            border-radius: 50px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            user-select: none;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: var(--hover-glow);
+            transform: translateY(-2px);
+        }
+
+        .content-wrapper {
+            width: 100%;
+            max-width: 1400px;
+            margin: 60px 0 20px 0;
+            padding: 2.5rem;
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            transition: all 0.5s ease-out;
+            box-sizing: border-box;
+        }
+
+        h2, h3 {
+            color: var(--secondary-accent-color);
+            text-align: center;
+            margin: 0 0 2rem 0;
+            font-weight: 500;
+        }
+
+        .input-section { margin-bottom: 2rem; }
+        .form-group { margin-bottom: 1.5rem; }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 400;
+            color: var(--text-muted-color);
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 12px 15px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            color: var(--text-color);
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-accent-color);
+            box-shadow: 0 0 8px rgba(107, 147, 214, 0.3);
+        }
+
+        .syntax-help {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 12px;
+            color: var(--text-muted-color);
+        }
+        .syntax-help h4 { color: var(--secondary-accent-color); margin-top: 0; }
+        .syntax-help code {
+            background-color: var(--surface-color);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        button, .styled-button {
+            background-color: var(--primary-accent-color);
+            color: var(--text-color);
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            width: 100%;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        button:hover, .styled-button:hover {
+            background-color: var(--secondary-accent-color);
+            transform: translateY(-2px);
+            box-shadow: var(--hover-glow);
+        }
+        button:disabled, .styled-button.disabled {
+            background-color: var(--text-muted-color);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .message { margin-top: 1.5rem; padding: 12px; border-radius: 6px; text-align: center; font-weight: 500; }
+        .success { background-color: var(--success-bg); color: var(--success-text); }
+        .error { background-color: var(--error-bg); color: var(--error-text); }
+        .loading { color: var(--text-muted-color); }
+
+        #scheduleContent { display: none; opacity: 0; transform: translateY(20px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+        #scheduleContent.visible { display: block; opacity: 1; transform: translateY(0); }
+
+        #mobileControls { display: none; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+        #mobileControls .day-selector { display: flex; justify-content: space-between; align-items: center; }
+        #mobileControls button { padding: 8px 12px; font-size: 14px; width: auto; flex-grow: 1; }
+        #mobileControls #prevDay, #mobileControls #nextDay { flex-grow: 0; width: 50px; }
+        #currentDayDisplay { color: var(--primary-accent-color); font-size: 1.2em; font-weight: 700; text-align: center; flex-grow: 2; }
+
+        #scheduleData {
+            margin-top: 1rem;
+            overflow-x: hidden;
+        }
+
+        /* --- NEW Grid Structure --- */
+        .schedule-grid {
+            display: grid;
+            /* Time column + 7 Day Containers */
+            grid-template-columns: 100px repeat(7, 1fr);
+            /* Header row + 48 time rows - heights managed by JS */
+            grid-template-rows: auto repeat(48, var(--normal-row-height)); /* Default heights */
+            gap: 2px;
+            min-width: 1100px;
+            box-sizing: border-box;
+            font-size: 0.8em;
+            position: relative; /* Needed for sticky headers */
+            overflow: hidden; /* Hide content that might stick out if rows are tiny */
+            transition: grid-template-rows 0.3s ease; /* Animate row height changes */
+        }
+
+        /* Header Row */
+        .grid-header, .grid-time-header {
+            grid-row: 1;
+            color: var(--secondary-accent-color);
+            font-weight: 500;
+            background-color: var(--bg-color);
+            position: sticky;
+            top: 0;
+            z-index: 3; /* Above day containers */
+        }
+        .grid-time-header { grid-column: 1; left: 0; z-index: 4; } /* Corner cell */
+        .grid-header { /* grid-column set by JS */ text-align: center; }
+
+        /* Time Column Cells */
+        .grid-slot-time {
+            grid-column: 1;
+            /* grid-row set by JS */
+            color: var(--text-muted-color);
+            font-weight: 500;
+            background-color: var(--bg-color);
+            position: sticky;
+            left: 0;
+            z-index: 2; /* Above day containers */
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 4px;
+            overflow: hidden; /* Hide content when row is tiny */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Day Column Containers (hold activities) */
+        .day-column-container {
+            /* grid-column set by JS */
+            grid-row: 2 / span 48; /* Span all time rows */
+            display: grid;
+            grid-template-rows: subgrid; /* Inherit rows from parent grid */
+            grid-template-columns: repeat(var(--sub-columns, 1), 1fr); /* Dynamic columns for overlap */
+            gap: 1px; /* Gap between activities in same day */
+            position: relative; /* Needed for stacking context */
+            z-index: 1; /* Below sticky headers/time */
+            background-color: var(--surface-color); /* Default background for the day column area */
+             border-left: 1px solid var(--border-color); /* Separator between day columns */
+             border-right: 1px solid var(--border-color);
+             box-sizing: border-box;
+        }
+        .day-column-container:first-of-type { border-left: none; }
+        .day-column-container:last-of-type { border-right: none; }
+
+
+        /* Activity Cells (items within day-column-container) */
+        .grid-activity {
+            /* grid-row and grid-column set by JS */
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: break-word; /* Handle long words */
+            color: var(--bg-color); /* Text color on activity background */
+            font-weight: 500;
+            cursor: help;
+            transition: all 0.1s ease-in-out; /* Faster transition for activities */
+            position: relative; /* For tooltip handling */
+            /* Default background - override with overlap color */
+            background-color: var(--primary-accent-color);
+            box-sizing: border-box;
+        }
+        
+        /* Overlap Colors */
+        .grid-activity.overlap-0 { background-color: var(--overlap-color-0); }
+        .grid-activity.overlap-1 { background-color: var(--overlap-color-1); }
+        .grid-activity.overlap-2 { background-color: var(--overlap-color-2); }
+        .grid-activity.overlap-3 { background-color: var(--overlap-color-3); }
+        .grid-activity.overlap-4 { background-color: var(--overlap-color-4); }
+        .grid-activity.overlap-5 { background-color: var(--overlap-color-5); }
+        .grid-activity.overlap-6 { background-color: var(--overlap-color-6); }
+
+
+        .grid-activity:hover {
+            transform: scale(1.01); /* Slightly less scale than before */
+            opacity: 0.95;
+            box-shadow: var(--hover-glow);
+            z-index: 10; /* Bring hovered activity to front */
+        }
+        /* Empty cells are just gaps in the grid now, no need for explicit elements */
+        /* .grid-activity.empty { display: none; } */
+
+
+        /* --- Collapsed/Merged Row Styles --- */
+        /* Apply row-expandable to the time slot cell that starts a collapsible block */
+        .grid-slot-time.row-expandable { cursor: pointer; }
+
+        /* Hide time slots within a collapsed block (except the first) */
+        .grid-slot-time.cell-hidden-by-collapse {
+             display: none !important; /* Hide completely */
+        }
+
+        /* Style the header of the collapsed block (the first time slot cell) */
+        .grid-slot-time.is-collapsed-merged {
+             background-color: var(--surface-color) !important; /* Lighter background */
+             border: 1px dashed var(--border-color) !important; /* Dashed border */
+             color: var(--text-color) !important; /* Ensure text is visible */
+             font-weight: 500 !important;
+             justify-content: center !important;
+             /* Height is controlled by grid-template-rows on the parent */
+        }
+         .grid-slot-time.is-collapsed-merged:hover {
+             background-color: var(--bg-color) !important; /* Darker hover */
+         }
+
+        /* Hide normal time, show collapsed time text in the header */
+        .grid-slot-time.is-collapsed-merged .content-normal { display: none; }
+        .grid-slot-time.is-collapsed-merged .content-collapsed { display: inline; }
+
+        /* Hide activity elements that fall within a collapsed time range */
+        .activity-hidden-by-collapse { display: none !important; }
+
+
+        .export-buttons { display: none; flex-direction: column; gap: 1rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color); }
+        .export-button { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; background: #00000000; backdrop-filter: blur(10px) saturate(180%); -webkit-backdrop-filter: blur(10px) saturate(180%); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: 500; text-decoration: none; color: var(--text-color); mix-blend-mode: difference; transition: all 0.3s ease; }
+        .export-button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); background: #00000010; }
+        .export-button:disabled { background: #00000010; border: 1px solid var(--border-color); cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.5; }
+        .export-icon { width: 20px; height: 20px; filter: var(--icon-filter); }
+
+        @media (max-width: 768px) {
+            body { padding: 0 10px; background-size: 15px 15px; }
+            .theme-toggle { top: 15px; right: 15px; padding: 6px 12px; font-size: 12px; }
+            .content-wrapper { max-width: 100%; margin: 50px 0 15px 0; padding: 1.5rem 1rem; border-radius: 8px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+            #mobileControls { display: flex; }
+
+            /* Mobile Today View Grid Layout */
+            .schedule-grid.mobile-today-view {
+                /* grid-template-columns set by JS based on day's max_cols */
+                min-width: unset; /* Allow shrinking */
+                font-size: 0.7em;
+                gap: 1px;
+            }
+             .schedule-grid.mobile-today-view .grid-cell { padding: 2px 1px; min-height: unset; } /* min-height unset for mobile collapse */
+
+
+            /* Hide other days in Mobile Today View */
+            .day-hidden { display: none !important; }
+
+            /* Mobile Full Week View Grid Layout */
+            .schedule-grid.mobile-full-view {
+                 /* MODIFIED: Force table to fit screen width and shrink font */
+                 min-width: unset;
+                 width: 100%;
+                 grid-template-columns: 40px repeat(7, 1fr); /* MODIFIED: Narrower time column */
+                 font-size: 0.5em; /* Shrink font to fit */
+                 gap: 1px;
+            }
+             .schedule-grid.mobile-full-view .grid-cell { padding: 2px 1px; min-height: unset; } /* min-height unset for mobile collapse */
+
+
+            /* Adjust Day Column Containers for Mobile */
+            .day-column-container {
+                 grid-row: 2 / span 48; /* Still span all time rows */
+                 /* grid-column set by JS */
+                 gap: 0.5px; /* Smaller gap on mobile */
+            }
+
+            /* Hide tooltip on mobile by default, JS will control display on click */
+             .activity-tooltip { display: none; }
+             .activity-tooltip.visible { display: block; }
+
+        }
+        @media (min-width: 769px) { /* Desktop styles */
+            .export-buttons { flex-direction: row; }
+            .export-buttons > * { flex: 1; }
+
+            /* Ensure day columns take equal space on desktop */
+             .schedule-grid {
+                grid-template-columns: 100px repeat(7, 1fr);
+             }
+             .day-column-container {
+                 grid-column: auto !important; /* Reset explicit column set by mobile JS */
+             }
+             .day-hidden { display: grid !important; } /* Ensure day columns are visible */
+        }
+
+        /* Print Styles */
+        .is-printing {
+            background-color: #ffffff !important;
+            min-width: 1200px !important;
+        }
+        .is-printing .grid-cell {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #ddd !important;
+        }
+        .is-printing .grid-slot-time,
+        .is-printing .grid-header,
+        .is-printing .grid-time-header {
+            background-color: #f2f2f2 !important;
+            color: #000000 !important;
+            position: static !important; /* Remove sticky */
+        }
+        .is-printing .day-column-container {
+             background-color: #ffffff !important; /* White background for day columns */
+             border-color: #ddd !important;
+             grid-row: 2 / span 48 !important; /* Ensure spanning */
+             grid-column: auto !important; /* Ensure correct column placement */
+        }
+         .is-printing .day-column-container:first-of-type { border-left: 1px solid #ddd !important; } /* Add border back */
+         .is-printing .day-column-container:last-of-type { border-right: 1px solid #ddd !important; }
+
+
+        .is-printing .grid-activity {
+            background-color: #e3f2fd !important; /* Default light blue for print */
+            color: #000000 !important;
+            border: 1px solid #ddd !important; /* Add border to activities */
+             /* Reset overlap colors for print if needed, or keep the light blue */
+             background-color: #e3f2fd !important;
+        }
+         .is-printing .grid-activity.overlap-0,
+         .is-printing .grid-activity.overlap-1,
+         .is-printing .grid-activity.overlap-2,
+         .is-printing .grid-activity.overlap-3,
+         .is-printing .grid-activity.overlap-4,
+         .is-printing .grid-activity.overlap-5,
+         .is-printing .grid-activity.overlap-6 {
+             background-color: #e3f2fd !important;
+         }
+
+
+        .is-printing .activity-tooltip { display: none !important; } /* Hide tooltips */
+
+        /* Ensure all elements are visible during printing, overriding collapse states */
+        .is-printing .cell-hidden-by-collapse {
+            display: flex !important; /* Re-show time slots */
+        }
+        .is-printing .activity-hidden-by-collapse {
+            display: flex !important; /* Re-show activities */
+        }
+        .is-printing .grid-slot-time.is-collapsed-merged .content-normal {
+            display: block !important; /* Show normal time for collapsed rows */
+        }
+        .is-printing .grid-slot-time.is-collapsed-merged .content-collapsed {
+            display: none !important; /* Hide collapsed time */
+        }
+        /* Restore normal time slot background/border for print */
+        .is-printing .grid-slot-time.expanded.is-collapsed-merged {
+             background-color: #f2f2f2 !important; /* Restore normal time header background */
+             border: 1px solid #ddd !important; /* Restore normal border */
+             color: #000000 !important;
+        }
+         /* Ensure the default 25px height for rows during print */
+         .is-printing.schedule-grid {
+             grid-template-rows: auto repeat(48, var(--normal-row-height)) !important;
+         }
+
+
+         /* ... 在您的 style 標籤結尾處加入 ... */
+
+        /* 使用者資訊 */
+        .user-profile {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        #userInfo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface-color);
+            padding: 5px 10px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+        .username { font-size: 14px; }
+        .logout-btn {
+            font-size: 12px;
+            color: var(--text-muted-color);
+            text-decoration: none;
+            background: var(--bg-color);
+            padding: 4px 8px;
+            border-radius: 10px;
+        }
+
+        /* AI 聊天按鈕 */
+        .ai-chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 998;
+        }
+        .ai-chat-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--primary-accent-color);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        .ai-chat-button:hover {
+            transform: scale(1.1);
+            box-shadow: var(--hover-glow);
+        }
+        .ai-chat-button img {
+            width: 32px;
+            height: 32px;
+            filter: brightness(0) invert(1);
+        }
+
+        /* 聊天視窗 */
+        .chat-modal {
+            display: none; /* 由 JS 控制顯示 */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+        .chat-window {
+            width: 90%;
+            max-width: 500px;
+            height: 70%;
+            max-height: 600px;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .chat-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header h3 { margin: 0; text-align: left; }
+        .close-chat-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .message {
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+        .message.user {
+            background-color: var(--primary-accent-color);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .message.ai {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .message.ai.typing {
+            color: var(--text-muted-color);
+            font-style: italic;
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        #chatForm {
+            display: flex;
+            gap: 10px;
+        }
+        #chatInput {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        #chatForm button {
+            padding: 10px 20px;
+            width: auto; /* 覆蓋全域按鈕樣式 */
+        }
+    </style>
+</head>
+<body>
+    <!-- NEW: Tooltip Element -->
+    <div id="activity-tooltip" class="activity-tooltip"></div>
+
+    <div class="theme-toggle">
+    <span id="theme-text">dark</span>
+    </div>
+
+    <!-- User Profile Area -->
+    <div class="user-profile">
+        {% if session %}
+        <div id="userInfo">
+            <img src="{{ session.picture }}" alt="User Avatar" class="avatar">
+            <span class="username">{{ session.name }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">登出</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- AI Chat Button -->
+    <div class="ai-chat-container">
+        <button id="aiChatBtn" class="ai-chat-button">
+            <img src="{{ url_for('static', filename='icon/1.png') }}" alt="AI Chat">
+        </button>
+    </div>
+
+    <!-- AI Chat Modal -->
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-window">
+            <div class="chat-header">
+                <h3>AI 作息諮詢師</h3>
+                <button id="closeChatBtn" class="close-chat-btn">×</button>
+            </div>
+            <div id="chatMessages" class="chat-messages">
+                <div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>
+            </div>
+            <div class="chat-input-area">
+                <form id="chatForm">
+                    <input type="text" id="chatInput" placeholder="輸入你的訊息..." autocomplete="off">
+                    <button type="submit">發送</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-wrapper">
+        <h2 id="mainTitle">生活週習表生成器</h2>
+        
+        <div class="input-section">
+            <form id="scheduleForm">
+                <div class="form-group">
+                    <label for="scheduleInput">請輸入您的週習表描述:</label>
+                    <textarea id="scheduleInput" name="scheduleInput" placeholder="範例：
+config:ics_repeat=3m
+
+週一 08:00-10:30 晨間運動 [記得帶水和毛巾]
+週一 09:00-11:00 專案開發 [完成登入模塊]
+二 9:00-12:00 辦公室工作
+三 14:00-15:00 團隊會議 [準備進度報告]
+三 14:30-16:00 客戶拜訪 [重疊會議]
+五 23:00-次日 01:00 看電影 [放鬆一下]"></textarea>
+                    <div class="syntax-help">
+                        <h4>語法說明：</h4>
+                        <ul>
+                            <li><b>活動格式:</b> <code>[星期] [開始時間]-[結束時間] [活動名稱] [[備註]]</code></li>
+                            <li><b>星期:</b> <code>週一</code>, <code>週二</code>... 或 <code>一</code>, <code>二</code>...<code>日</code></li>
+                            <li><b>時間:</b> 24小時制，例如 <code>09:00</code>, <code>14:30</code></li>
+                            <li><b>跨天:</b> <code>週一 23:00-次日 01:30 夜間學習</code></li>
+                            <li><b>備註:</b> 在行末使用方括號 <code>[這是我的備註]</code></li>
+                            <li><b>重疊活動:</b> 系統會自動將重疊的活動拆分到不同欄位中並用不同顏色區分</li>
+                            <li><b>全局設定:</b> <code>config:ics_repeat=3m</code> (設定日曆匯出重複3個月，預設6個月)</li>
+                        </ul>
+                    </div>
+                </div>
+                <button type="submit" id="generateBtn">生成週習表</button>
+            </form>
+        </div>
+        
+        <div id="message"></div>
+        
+        <div id="scheduleContent">
+            <div id="mobileControls">
+                <div class="day-selector">
+                    <button id="prevDay"><</button>
+                    <span id="currentDayDisplay"></span>
+                    <button id="nextDay">></button>
+                </div>
+                <button id="toggleViewBtn">顯示整週</button>
+            </div>
+            <div id="scheduleData"></div>
+            <div class="export-buttons" id="exportContainer">
+                <button class="export-button" id="exportPngBtn">
+                    <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                    導出為 PNG
+                </button>
+                <button class="export-button" id="exportPdfBtn">
+                    <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14,2 L20,8 L20,22 L4,22 L4,2 L14,2 Z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+                    導出為 PDF
+                </button>
+                <button class="export-button" id="exportIcsBtn">
+                    <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    添加到日曆 (.ics)
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // 將需要在全域範圍內訪問的函數定義在頂層
+    function toggleTheme() {
+        const newTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        document.getElementById('theme-text').textContent = newTheme;
+        localStorage.setItem('theme', newTheme);
+        // 觸發一個自定義事件，讓 DOMContentLoaded 內的監聽器知道主題已更改
+        window.dispatchEvent(new Event('themeChanged'));
+    }
+
+    function loadTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('theme-text').textContent = savedTheme;
+    }
+
+    // 頁面加載時立即加載主題，避免閃爍
+    loadTheme();
+
+    // 當 DOM 完全加載後，再執行與 DOM 元素相關的操作
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- 變數定義 ---
+        let currentDayIndex = 0;
+        let currentViewMode = "today"; // "today", "full-mobile", "full-desktop"
+        const dayNames = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+        let processedScheduleData = null;
+
+        let normalRowHeight = 25;
+        let collapsedBlockHeight = 50;
+        
+        let chatHistory = []; // 用來保存對話歷史
+
+        // --- DOM 元素獲取 ---
+        const themeToggleBtn = document.querySelector('.theme-toggle');
+        const scheduleDataContainer = document.getElementById('scheduleData');
+        const scheduleForm = document.getElementById("scheduleForm");
+        const tooltip = document.getElementById('activity-tooltip');
+        const aiChatBtn = document.getElementById('aiChatBtn');
+        const chatModal = document.getElementById('chatModal');
+        const closeChatBtn = document.getElementById('closeChatBtn');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+        const scheduleTextarea = document.getElementById('scheduleInput');
+        
+        // 檢查使用者是否登入
+        const isLoggedIn = document.getElementById('userInfo') !== null;
+
+        // --- 函數定義 ---
+
+        function getCssVariable(name) {
+            const style = getComputedStyle(document.documentElement);
+            return parseFloat(style.getPropertyValue(name).replace('px', ''));
+        }
+
+        function updateCssVariables() {
+            normalRowHeight = getCssVariable('--normal-row-height');
+            collapsedBlockHeight = getCssVariable('--collapsed-block-height');
+        }
+
+        function setupMobileView() {
+            const isMobile = window.innerWidth <= 768;
+            const mobileControls = document.getElementById("mobileControls");
+            if (!document.querySelector(".schedule-grid")) return;
+
+            mobileControls.style.display = isMobile ? "flex" : "none";
+
+            if (isMobile && currentViewMode !== "full-mobile" && currentViewMode !== "today") {
+                let today = new Date().getDay();
+                currentDayIndex = (today === 0) ? 6 : today - 1;
+                currentViewMode = "today";
+            } else if (!isMobile && (currentViewMode === "today" || currentViewMode === "full-mobile")) {
+                currentViewMode = "full-desktop";
+            }
+            if (processedScheduleData) updateTableView();
+        }
+
+        function renderScheduleGrid(data) {
+            processedScheduleData = data;
+            updateCssVariables();
+
+            const weekDays = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+            const numSlots = 48;
+
+            let html = '<div class="schedule-grid">';
+            html += '<div class="grid-cell grid-time-header"></div>';
+            for (let i = 0; i < 7; i++) {
+                html += `<div class="grid-cell grid-header" data-day-index="${i}" style="grid-column: ${i + 2};">${weekDays[i]}</div>`;
+            }
+
+            for (let slotIdx = 0; slotIdx < numSlots; slotIdx++) {
+                const startTime = `${String(Math.floor(slotIdx / 2)).padStart(2, '0')}:${String((slotIdx % 2) * 30).padStart(2, '0')}`;
+                html += `
+                    <div class="grid-cell grid-slot-time" data-slot-index="${slotIdx}" style="grid-row: ${slotIdx + 2};">
+                       <span class="content-normal">${startTime}</span>
+                       <span class="content-collapsed"></span>
+                    </div>
+                `;
+            }
+
+            for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+                const maxCols = data.max_day_cols[dayIdx] || 1;
+                html += `<div class="day-column-container" data-day-index="${dayIdx}" style="grid-column: ${dayIdx + 2}; grid-row: 2 / span 48; --sub-columns: ${maxCols};"></div>`;
+            }
+            html += '</div>';
+
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+
+            data.day_activities.forEach((activities, dayIdx) => {
+                const dayContainer = tempDiv.querySelector(`.day-column-container[data-day-index="${dayIdx}"]`);
+                if (!dayContainer) return;
+
+                activities.forEach(activity => {
+                    const duration = activity.end_slot - activity.start_slot;
+                    const colSpan = activity.col_span || 1;
+                    const overlapClass = `overlap-${activity.col_index % 7}`;
+                    const activityHtml = `
+                        <div class="grid-activity has-activity ${overlapClass}"
+                             data-note="${activity.note || ''}"
+                             data-is-empty="false"
+                             data-slot-index="${activity.start_slot}"
+                             data-day-index="${activity.day}"
+                             data-end-slot="${activity.end_slot}"
+                             style="grid-row: ${activity.start_slot + 1} / span ${duration}; grid-column: ${activity.col_index + 1} / span ${colSpan};">
+                            ${activity.name}
+                        </div>
+                    `;
+                    dayContainer.innerHTML += activityHtml;
+                });
+            });
+
+            scheduleDataContainer.innerHTML = tempDiv.innerHTML;
+        }
+
+        function updateTableView() {
+            const isMobile = window.innerWidth <= 768;
+            const grid = document.querySelector(".schedule-grid");
+            if (!grid || !processedScheduleData) return;
+
+            grid.classList.remove("mobile-today-view", "mobile-full-view");
+            grid.style.gridTemplateColumns = "";
+
+            const timeSlots = Array.from(grid.querySelectorAll(".grid-slot-time"));
+            const dayContainers = Array.from(grid.querySelectorAll(".day-column-container"));
+            const allActivities = Array.from(grid.querySelectorAll(".grid-activity"));
+            const dayHeaders = Array.from(grid.querySelectorAll(".grid-header"));
+
+            timeSlots.forEach(slot => {
+                slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse", "expanded");
+                slot.style.display = 'flex';
+                slot.querySelector('.content-normal').style.display = 'flex';
+                slot.querySelector('.content-collapsed').style.display = 'none';
+                slot.querySelector('.content-collapsed').textContent = '';
+                delete slot.dataset.groupStart;
+                delete slot.dataset.groupEnd;
+            });
+            allActivities.forEach(activity => activity.classList.remove("activity-hidden-by-collapse"));
+            dayContainers.forEach(container => {
+                container.classList.remove("day-hidden");
+                container.style.gridColumn = '';
+            });
+            dayHeaders.forEach(header => {
+                header.classList.remove("day-hidden");
+                header.style.gridColumn = '';
+            });
+
+            if (isMobile && currentViewMode === "today") {
+                document.getElementById("toggleViewBtn").textContent = "顯示整週";
+                const mobileSubCols = processedScheduleData.max_day_cols[currentDayIndex] || 1;
+                grid.style.setProperty('--mobile-sub-columns', mobileSubCols);
+                grid.classList.add("mobile-today-view");
+                grid.style.gridTemplateColumns = `60px repeat(var(--mobile-sub-columns), 1fr)`;
+
+                dayContainers.forEach(container => {
+                    if (container.dataset.dayIndex != currentDayIndex) {
+                        container.classList.add("day-hidden");
+                    } else {
+                        container.style.gridColumn = '2 / span var(--mobile-sub-columns)';
+                    }
+                });
+                dayHeaders.forEach(header => {
+                    if (header.dataset.dayIndex != currentDayIndex) {
+                        header.classList.add("day-hidden");
+                    } else {
+                        header.style.gridColumn = '2 / -1';
+                    }
+                });
+            } else if (isMobile && currentViewMode === "full-mobile") {
+                document.getElementById("toggleViewBtn").textContent = "單日檢視";
+                grid.classList.add("mobile-full-view");
+            } else if (!isMobile) {
+                grid.style.gridTemplateColumns = "100px repeat(7, 1fr)";
+            }
+
+            const rowHeights = Array(48).fill(`${normalRowHeight}px`);
+            let currentBlock = null;
+            let collapsibleBlocks = [];
+
+            const isSlotEmptyInCurrentView = (slotIndex) => {
+                for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+                    if (isMobile && currentViewMode === "today" && dayIdx != currentDayIndex) continue;
+                    const activitiesInSlotOnDay = processedScheduleData.day_activities[dayIdx].filter(act =>
+                        act.start_slot <= slotIndex && act.end_slot > slotIndex
+                    );
+                    if (activitiesInSlotOnDay.length > 0) return false;
+                }
+                return true;
+            };
+
+            for (let i = 0; i < timeSlots.length; i++) {
+                const slotIndex = parseInt(timeSlots[i].dataset.slotIndex);
+                if (isSlotEmptyInCurrentView(slotIndex)) {
+                    if (currentBlock === null) {
+                        currentBlock = { startSlotIdx: i, endSlotIdx: i };
+                    } else {
+                        currentBlock.endSlotIdx = i;
+                    }
+                } else {
+                    if (currentBlock !== null) {
+                        if (currentBlock.endSlotIdx > currentBlock.startSlotIdx) {
+                            collapsibleBlocks.push(currentBlock);
+                        }
+                        currentBlock = null;
+                    }
+                }
+            }
+            if (currentBlock !== null && currentBlock.endSlotIdx > currentBlock.startSlotIdx) {
+                collapsibleBlocks.push(currentBlock);
+            }
+
+            collapsibleBlocks.forEach(block => {
+                const headerSlotEl = timeSlots[block.startSlotIdx];
+                if (!headerSlotEl) return;
+                const isExpanded = headerSlotEl.classList.contains('expanded');
+                headerSlotEl.classList.add("row-expandable");
+                headerSlotEl.dataset.groupStart = timeSlots[block.startSlotIdx].dataset.slotIndex;
+                headerSlotEl.dataset.groupEnd = timeSlots[block.endSlotIdx].dataset.slotIndex;
+
+                if (!isExpanded) {
+                    headerSlotEl.classList.add("is-collapsed-merged");
+                    const startTimeText = timeSlots[block.startSlotIdx].querySelector('.content-normal').textContent.trim();
+                    const endSlotIndex = parseInt(timeSlots[block.endSlotIdx].dataset.slotIndex) + 1;
+                    const endTime = `${String(Math.floor(endSlotIndex / 2)).padStart(2, '0')}:${String((endSlotIndex % 2) * 30).padStart(2, '0')}`;
+                    headerSlotEl.querySelector('.content-collapsed').textContent = `${startTimeText} - ${endTime}`;
+                    headerSlotEl.querySelector('.content-normal').style.display = 'none';
+                    headerSlotEl.querySelector('.content-collapsed').style.display = 'inline';
+
+                    for (let k = block.startSlotIdx + 1; k <= block.endSlotIdx; k++) {
+                        if (timeSlots[k]) timeSlots[k].classList.add("cell-hidden-by-collapse");
+                    }
+                    
+                    rowHeights[block.startSlotIdx] = `${collapsedBlockHeight}px`;
+                    for (let k = block.startSlotIdx + 1; k <= block.endSlotIdx; k++) {
+                        rowHeights[k] = `0px`;
+                    }
+                }
+            });
+
+            grid.style.gridTemplateRows = `auto ${rowHeights.join(' ')}`;
+            document.getElementById("currentDayDisplay").textContent = dayNames[currentDayIndex];
+            document.getElementById("prevDay").disabled = (currentDayIndex === 0 && currentViewMode === "today");
+            document.getElementById("nextDay").disabled = (currentDayIndex === 6 && currentViewMode === "today");
+        }
+
+        async function performExport(type) {
+            const grid = document.querySelector('.schedule-grid');
+            const button = document.getElementById(`export${type}Btn`);
+            const originalText = button.innerHTML;
+            button.innerHTML = `生成中...`;
+            button.disabled = true;
+
+            grid.classList.add('is-printing');
+            grid.classList.remove('mobile-today-view', 'mobile-full-view');
+            grid.style.gridTemplateColumns = "100px repeat(7, 1fr)";
+            grid.style.gridTemplateRows = `auto repeat(48, ${normalRowHeight}px)`;
+
+            grid.querySelectorAll('.grid-slot-time, .grid-activity').forEach(el => {
+                el.classList.remove("row-expandable", "is-collapsed-merged", "expanded", "cell-hidden-by-collapse", "activity-hidden-by-collapse");
+                el.style.display = '';
+                if(el.querySelector('.content-normal')) {
+                    el.querySelector('.content-normal').style.display = 'flex';
+                    el.querySelector('.content-collapsed').style.display = 'none';
+                }
+            });
+
+            try {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const canvas = await html2canvas(grid, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                const link = document.createElement('a');
+                if (type === 'Png') {
+                    link.download = 'weekly_schedule.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } else if (type === 'Pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const imgData = canvas.toDataURL('image/png');
+                    const aspectRatio = canvas.width / canvas.height;
+                    let orientation = canvas.width > canvas.height ? 'l' : 'p';
+                    const pdf = new jsPDF({ orientation: orientation, unit: 'px', format: [canvas.width, canvas.height] });
+                    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+                    pdf.save('weekly_schedule.pdf');
+                }
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('導出失敗，請查看控制台日誌。');
+            } finally {
+                grid.classList.remove('is-printing');
+                updateTableView();
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        function addMessageToChat(sender, text) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+            messageElement.innerHTML = text.replace(/\n/g, '<br>');
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return messageElement;
+        }
+
+        function parseAndApplySchedule(text) {
+            const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
+            const match = text.match(scheduleRegex);
+
+            if (match && match[1]) {
+                const newEntries = match[1].trim();
+                const currentSchedule = scheduleTextarea.value;
+                scheduleTextarea.value = (currentSchedule ? currentSchedule.trim() + '\n' : '') + newEntries + '\n';
+                const notification = addMessageToChat('ai', '我已將上述行程更新到您的週習表中！');
+                setTimeout(() => {
+                    notification.style.transition = 'opacity 0.5s';
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 500);
+                }, 3000);
+            }
+        }
+
+        // --- Tooltip Logic ---
+        let tooltipVisible = false;
+        let activeTooltipTarget = null;
+
+        const showTooltip = (target, event) => {
+            const note = target.dataset.note;
+            if (!note) return;
+            if (tooltipVisible && activeTooltipTarget && activeTooltipTarget !== target) hideTooltip();
+            tooltip.innerHTML = note;
+            tooltip.classList.add('visible');
+            tooltipVisible = true;
+            activeTooltipTarget = target;
+            updateTooltipPosition(event);
+        };
+
+        const hideTooltip = () => {
+            tooltip.classList.remove('visible');
+            tooltipVisible = false;
+            activeTooltipTarget = null;
+        };
+
+        const updateTooltipPosition = (event) => {
+            if (!tooltipVisible || !activeTooltipTarget) return;
+            const offsetX = 15, offsetY = 15;
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const vpWidth = window.innerWidth, vpHeight = window.innerHeight;
+            let x = event.clientX + offsetX, y = event.clientY + offsetY;
+            if (x + tooltipRect.width > vpWidth - 10) x = event.clientX - tooltipRect.width - offsetX;
+            if (y + tooltipRect.height > vpHeight - 10) y = event.clientY - tooltipRect.height - offsetY;
+            if (x < 5) x = 5;
+            if (y < 5) y = 5;
+            tooltip.style.left = `${x}px`;
+            tooltip.style.top = `${y}px`;
+        };
+
+        // --- 事件監聽器綁定 ---
+
+        // 主題切換
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', toggleTheme);
+        }
+        window.addEventListener('themeChanged', () => {
+            updateCssVariables();
+            if (processedScheduleData) {
+                updateTableView();
+            }
+        });
+
+        // 生成週習表
+        if (scheduleForm) {
+            scheduleForm.addEventListener("submit", async function(event) {
+                event.preventDefault();
+                const generateBtn = document.getElementById("generateBtn");
+                const messageDiv = document.getElementById("message");
+
+                generateBtn.disabled = true;
+                generateBtn.textContent = "生成中...";
+                messageDiv.innerHTML = '<div class="loading">正在解析語法並生成週習表...</div>';
+                document.getElementById("scheduleContent").classList.remove("visible");
+
+                try {
+                    const response = await fetch("/api/generate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ schedule_input: scheduleTextarea.value }),
+                    });
+                    const result = await response.json();
+                    if (result.status === "success") {
+                        messageDiv.innerHTML = '<div class="success">週習表生成成功！</div>';
+                        renderScheduleGrid(result.data);
+                        document.getElementById("scheduleContent").classList.add("visible");
+                        document.getElementById("exportContainer").style.display = "flex";
+                        setupMobileView();
+                    } else {
+                        messageDiv.innerHTML = `<div class="error">生成失敗: ${result.message}</div>`;
+                    }
+                } catch (error) {
+                    messageDiv.innerHTML = `<div class="error">發生錯誤: ${error.message}</div>`;
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = "生成週習表";
+                }
+            });
+        }
+
+        // 導出按鈕
+        document.getElementById("exportPngBtn")?.addEventListener("click", () => performExport("Png"));
+        document.getElementById("exportPdfBtn")?.addEventListener("click", () => performExport("Pdf"));
+        document.getElementById("exportIcsBtn")?.addEventListener("click", () => window.location.href = '/api/export/ics');
+        
+        // 行動裝置控制
+        document.getElementById("prevDay")?.addEventListener("click", () => { if (currentDayIndex > 0) { currentDayIndex--; updateTableView(); } });
+        document.getElementById("nextDay")?.addEventListener("click", () => { if (currentDayIndex < 6) { currentDayIndex++; updateTableView(); } });
+        document.getElementById("toggleViewBtn")?.addEventListener("click", () => { if (window.innerWidth <= 768) { currentViewMode = (currentViewMode === "today") ? "full-mobile" : "today"; updateTableView(); } });
+        
+        // 視窗大小調整
+        window.addEventListener("resize", setupMobileView);
+
+        // Tooltip 和 Grid 互動 (事件代理)
+        if (scheduleDataContainer) {
+            scheduleDataContainer.addEventListener('mouseover', (event) => {
+                if (window.innerWidth > 768) {
+                    const target = event.target.closest('.grid-activity[data-note]');
+                    if (target && !target.classList.contains('activity-hidden-by-collapse')) {
+                        showTooltip(target, event);
+                    }
+                }
+            });
+
+            scheduleDataContainer.addEventListener('mouseout', (event) => {
+                if (window.innerWidth > 768) {
+                    const target = event.target.closest('.grid-activity[data-note]');
+                    if (target) hideTooltip();
+                }
+            });
+
+            scheduleDataContainer.addEventListener('mousemove', (event) => {
+                if (window.innerWidth > 768) updateTooltipPosition(event);
+            });
+
+            scheduleDataContainer.addEventListener('click', (event) => {
+                // 行動裝置 Tooltip
+                if (window.innerWidth <= 768) {
+                    const target = event.target.closest('.grid-activity[data-note]');
+                    if (target && !target.classList.contains('activity-hidden-by-collapse')) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (tooltipVisible && activeTooltipTarget === target) {
+                            hideTooltip();
+                        } else {
+                            showTooltip(target, event);
+                        }
+                    } else if (tooltipVisible) {
+                        hideTooltip();
+                    }
+                }
+                
+                // 摺疊/展開行
+                const expandableRow = event.target.closest(".grid-slot-time.row-expandable");
+                if (expandableRow) {
+                    expandableRow.classList.toggle("expanded");
+                    updateTableView();
+                    if (tooltipVisible && activeTooltipTarget && activeTooltipTarget.classList.contains('activity-hidden-by-collapse')) {
+                        hideTooltip();
+                    }
+                }
+            });
+        }
+        
+        document.body.addEventListener('click', (event) => {
+            if (window.innerWidth <= 768 && tooltipVisible) {
+                if (!tooltip.contains(event.target) && !event.target.closest('.grid-activity[data-note]')) {
+                    hideTooltip();
+                }
+            }
+        }, true);
+
+        // AI 聊天
+        if (aiChatBtn) {
+            aiChatBtn.addEventListener('click', () => {
+                if (isLoggedIn) {
+                    chatModal.style.display = 'flex';
+                } else {
+                    window.location.href = "{{ url_for('login') }}";
+                }
+            });
+        }
+
+        if (closeChatBtn) {
+            closeChatBtn.addEventListener('click', () => {
+                chatModal.style.display = 'none';
+            });
+        }
+
+        if (chatModal) {
+            chatModal.addEventListener('click', (e) => {
+                if (e.target === chatModal) {
+                    chatModal.style.display = 'none';
+                }
+            });
+        }
+
+        if (chatForm) {
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const message = chatInput.value.trim();
+                if (!message) return;
+
+                addMessageToChat('user', message);
+                chatHistory.push({ role: 'user', parts: [message] });
+                chatInput.value = '';
+
+                const typingIndicator = addMessageToChat('ai typing', '...');
+                
+                try {
+                    const response = await fetch("{{ url_for('api_chat') }}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: message, history: chatHistory }),
+                    });
+                    
+                    typingIndicator.remove();
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        addMessageToChat('ai', `發生錯誤: ${error.error || '無法連接伺服器'}`);
+                        return;
+                    }
+
+                    const data = await response.json();
+                    const aiReply = data.reply;
+
+                    addMessageToChat('ai', aiReply);
+                    chatHistory.push({ role: 'model', parts: [aiReply] });
+
+                    parseAndApplySchedule(aiReply);
+
+                } catch (error) {
+                    typingIndicator.remove();
+                    addMessageToChat('ai', `客戶端錯誤: ${error.message}`);
+                }
+            });
+        }
+
+        // --- 初始設定 ---
+        updateCssVariables();
+    });
+</script>
