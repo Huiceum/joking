@@ -601,30 +601,59 @@
             filter: brightness(0) invert(1);
         }
 
-        /* 聊天視窗 */
+        /* --- NEW: 聊天視窗 (Chat Modal) --- */
         .chat-modal {
-            display: none; /* 由 JS 控制顯示 */
+            display: none; /* 由 JS class 'is-open' 控制 */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
             z-index: 999;
-            justify-content: center;
-            align-items: center;
+            background-color: transparent; /* 遮罩背景色會漸變 */
+            transition: background-color 0.4s ease;
+        }
+        .chat-modal.is-open {
+            display: block;
+            background-color: rgba(0, 0, 0, 0.5); /* 顯示時淡入遮罩 */
         }
         .chat-window {
-            width: 90%;
-            max-width: 500px;
-            height: 70%;
-            max-height: 600px;
+            position: fixed;
             background-color: var(--surface-color);
-            border-radius: 12px;
             display: flex;
             flex-direction: column;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.4s ease-in-out;
         }
+        /* 手機模式 (預設): 全螢幕，由下往上滑入 */
+        .chat-window {
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            transform: translateY(100%);
+        }
+        .chat-modal.is-open .chat-window {
+            transform: translateY(0);
+        }
+        /* 電腦模式: 右側邊欄，由右往左滑入 */
+        @media (min-width: 769px) {
+            .chat-window {
+                top: 0;
+                right: 0;
+                left: auto;
+                width: 400px;
+                height: 100%;
+                border-radius: 12px 0 0 12px;
+                transform: translateX(100%);
+            }
+            .chat-modal.is-open .chat-window {
+                transform: translateX(0);
+            }
+        }
+        /* --- END NEW: 聊天視窗 --- */
+
         .chat-header {
             padding: 15px;
             border-bottom: 1px solid var(--border-color);
@@ -653,6 +682,7 @@
             border-radius: 18px;
             max-width: 80%;
             line-height: 1.5;
+            word-wrap: break-word;
         }
         .message.user {
             background-color: var(--primary-accent-color);
@@ -671,6 +701,21 @@
             font-style: italic;
         }
 
+        /* --- NEW: AI 回覆中的 Schedule 區塊樣式 --- */
+        .ai-schedule-block {
+            background-color: var(--bg-color);
+            border: 1px solid var(--primary-accent-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--text-color);
+            font-size: 0.9em;
+        }
+        /* --- END NEW --- */
+        
         .chat-input-area {
             padding: 15px;
             border-top: 1px solid var(--border-color);
@@ -1115,16 +1160,54 @@ config:ics_repeat=3m
             }
         }
 
+        // --- NEW: 解析並渲染 AI 回覆的函數 ---
+        function renderAiMessage(text) {
+            const container = document.createDocumentFragment();
+            const scheduleRegex = /```schedule\n([\s\S]*?)\n```/g;
+            let lastIndex = 0;
+            let match;
+
+            while ((match = scheduleRegex.exec(text)) !== null) {
+                // 加入匹配前的普通文本
+                if (match.index > lastIndex) {
+                    const textNode = document.createElement('span');
+                    textNode.innerHTML = text.substring(lastIndex, match.index).replace(/\n/g, '<br>');
+                    container.appendChild(textNode);
+                }
+
+                // 加入特殊樣式的 schedule 區塊
+                const scheduleContent = match[1];
+                const scheduleBlock = document.createElement('div');
+                scheduleBlock.className = 'ai-schedule-block';
+                scheduleBlock.textContent = scheduleContent;
+                container.appendChild(scheduleBlock);
+
+                lastIndex = scheduleRegex.lastIndex;
+            }
+
+            // 加入最後一次匹配後剩餘的普通文本
+            if (lastIndex < text.length) {
+                const textNode = document.createElement('span');
+                textNode.innerHTML = text.substring(lastIndex).replace(/\n/g, '<br>');
+                container.appendChild(textNode);
+            }
+            return container;
+        }
+
+        // --- MODIFIED: 新增聊天訊息的函數 ---
         function addMessageToChat(sender, text) {
             const messageElement = document.createElement('div');
-            
-            // 修正：將 sender 字串按空格拆分，並逐個添加到 classList
             const classes = sender.split(' ');
-            messageElement.classList.add('message', ...classes); // 使用展開運算符 (...)
+            messageElement.classList.add('message', ...classes);
 
-            // 使用 innerHTML 來渲染 Markdown (例如換行)
-            // 注意：在真實產品中，需要對 text 進行淨化以防止 XSS
-            messageElement.innerHTML = text.replace(/\n/g, '<br>');
+            // 如果是 AI 回覆且不是 "輸入中..."，則解析特殊格式
+            if (sender.includes('ai') && !sender.includes('typing')) {
+                const content = renderAiMessage(text);
+                messageElement.appendChild(content);
+            } else {
+                // 對於使用者訊息或 "輸入中..."，直接顯示文字
+                messageElement.innerHTML = text.replace(/\n/g, '<br>');
+            }
             
             chatMessages.appendChild(messageElement);
             chatMessages.scrollTop = chatMessages.scrollHeight; // 自動滾動到底部
@@ -1305,11 +1388,11 @@ config:ics_repeat=3m
             }
         }, true);
 
-        // AI 聊天
+        // --- MODIFIED: AI 聊天互動 ---
         if (aiChatBtn) {
             aiChatBtn.addEventListener('click', () => {
                 if (isLoggedIn) {
-                    chatModal.style.display = 'flex';
+                    chatModal.classList.add('is-open');
                 } else {
                     window.location.href = "{{ url_for('login') }}";
                 }
@@ -1318,14 +1401,14 @@ config:ics_repeat=3m
 
         if (closeChatBtn) {
             closeChatBtn.addEventListener('click', () => {
-                chatModal.style.display = 'none';
+                chatModal.classList.remove('is-open');
             });
         }
 
         if (chatModal) {
             chatModal.addEventListener('click', (e) => {
-                if (e.target === chatModal) {
-                    chatModal.style.display = 'none';
+                if (e.target === chatModal) { // 點擊遮罩時關閉
+                    chatModal.classList.remove('is-open');
                 }
             });
         }
@@ -1376,3 +1459,5 @@ config:ics_repeat=3m
         updateCssVariables();
     });
 </script>
+</body>
+</html>
