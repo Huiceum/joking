@@ -80,7 +80,7 @@
             --collapsed-block-height: 50px;
         }
 
-        /* --- 新增：右上角控制項容器 --- */
+                /* --- 新增：右上角控制項容器 --- */
         .top-right-controls {
             position: fixed;
             top: 20px;
@@ -439,7 +439,7 @@
         .export-button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); background: #00000010; }
         .export-button:disabled { background: #00000010; border: 1px solid var(--border-color); cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.5; }
         /* export-icon class 已有 filter, 我們只需確保圖片尺寸 */
-        .export-icon {
+        .export-button img {
             width: 20px;
             height: 20px;
             filter: var(--icon-filter); /* 確保 filter 應用於 img */
@@ -609,12 +609,12 @@
         }
 
         /* AI 聊天按鈕 */
-        .ai-chat-container {
-            position: fixed;
+        /* .ai-chat-container { /* 這個容器現在用不到，可以移除 */
+        /*    position: fixed;
             bottom: 30px;
             right: 30px;
             z-index: 998;
-        }
+        } */
         /* 修改後的 .ai-chat-button */
         .ai-chat-button {
             /* 移除 position, bottom, right, background-color, box-shadow */
@@ -623,12 +623,15 @@
             border-radius: 8px; /* 統一為方形圓角 */
             border: none;
             /* display, justify-content, align-items, cursor, transition 已在 .glass-ui-element 中定義 */
+            /* --- NEW: 確保按鈕內的圖片大小和濾鏡 --- */
+             padding: 0; /* 移除預設 padding */
         }
-        /* .ai-chat-button:hover 的 transform 和 box-shadow 已被 .glass-ui-element:hover 取代 */
         .ai-chat-button img {
             width: 28px; /* 稍微調整圖示大小以適應新按鈕尺寸 */
             height: 28px;
-            filter: brightness(0) invert(1);
+            /* --- MODIFIED: 使用 icon-filter 變數 --- */
+            filter: var(--icon-filter);
+            /* --- */
         }
 
         /* --- NEW: 聊天視窗 (Chat Modal) --- */
@@ -639,7 +642,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 1010; /* << 修改這裡 */
+            z-index: 1010; 
             background-color: transparent; /* 遮罩背景色會漸變 */
             transition: background-color 0.4s ease;
         }
@@ -648,12 +651,14 @@
             background-color: rgba(0, 0, 0, 0.5); /* 顯示時淡入遮罩 */
         }
         .chat-window {
-            position: fixed;
+            position: fixed; /* MODIFIED: 從 absolute 改為 fixed */
             background-color: var(--surface-color);
             display: flex;
             flex-direction: column;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             transition: transform 0.4s ease-in-out;
+            /* --- NEW: 讓 chat-window 本身成為絕對定位的參考 --- */
+            /* position: fixed; /* Already done */
         }
         /* 手機模式 (預設): 全螢幕，由下往上滑入 */
         .chat-window {
@@ -690,18 +695,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: relative; /* 為了讓關閉按鈕可以絕對定位 */
+            /* --- MODIFIED: 移除 header 的 relative 定位，由 chat-window 作為關閉按鈕的參考點 --- */
+            /* position: relative; */ 
         }
-        /* --- MODIFIED: 關閉聊天按鈕樣式 --- */
+        .chat-header h3 { margin: 0; text-align: left; }
+        /* --- MODIFIED: 關閉聊天按鈕樣式 (位置相對於 chat-window) --- */
         .close-chat-btn {
             background: none;
             border: none;
             cursor: pointer;
-            padding: 8px; /* 增加點擊區域 */
-            line-height: 0; /* 移除圖片下方多餘空間 */
-            position: absolute; /* 相對於 header 定位 */
+            padding: 8px; 
+            line-height: 0;
+            /* --- MODIFIED: 將位置改為相對於 chat-window --- */
+            position: absolute; 
             top: 10px;
             right: 10px;
+            z-index: 10; /* 確保在 header 內容之上 */
         }
 
         .close-chat-btn img {
@@ -823,11 +832,12 @@
         <div class="chat-window">
             <div class="chat-header">
                 <h3>AI 作息諮詢師</h3>
-                <!-- --- MODIFIED: Close Chat Button 使用 2.png --- -->
-                <button id="closeChatBtn" class="close-chat-btn">
-                    <img src="{{ url_for('static', filename='icon/2.png') }}" alt="Close Chat">
-                </button>
             </div>
+            <!-- --- MODIFIED: Close Chat Button 從 header 移出，直接放在 chat-window 裡 --- -->
+            <button id="closeChatBtn" class="close-chat-btn glass-ui-element">
+                <img src="{{ url_for('static', filename='icon/2.png') }}" alt="Close Chat">
+            </button>
+            <!-- --- -->
             <div id="chatMessages" class="chat-messages">
                 <div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>
             </div>
@@ -841,9 +851,7 @@
     </div>
 
     <div class="content-wrapper">
-        <!-- --- MODIFIED: Change title text --- -->
         <h2 id="mainTitle">生活週習表生成器</h2>
-        <!-- --- -->
         
         <div class="input-section">
             <form id="scheduleForm">
@@ -891,23 +899,25 @@ config:ics_repeat=3m
                 <!-- --- MODIFIED: 導出 PNG 按鈕，使用 6.png --- -->
                 <button class="export-button" id="exportPngBtn">
                     <img class="export-icon" src="{{ url_for('static', filename='icon/6.png') }}" alt="Export PNG">
-                    導出為 PNG
+                    <span>導出為 PNG</span> <!-- Wrap text in span -->
                 </button>
                 <!-- --- MODIFIED: 導出 PDF 按鈕，使用 5.png --- -->
                 <button class="export-button" id="exportPdfBtn">
                     <img class="export-icon" src="{{ url_for('static', filename='icon/5.png') }}" alt="Export PDF">
-                    導出為 PDF
+                    <span>導出為 PDF</span> <!-- Wrap text in span -->
                 </button>
                 <!-- --- MODIFIED: 導出 ICS 按鈕，使用 7.png --- -->
                 <button class="export-button" id="exportIcsBtn">
                     <img class="export-icon" src="{{ url_for('static', filename='icon/7.png') }}" alt="Export ICS">
-                    添加到日曆 (.ics)
+                    <span>添加到日曆 (.ics)</span> <!-- Wrap text in span -->
                 </button>
             </div>
         </div>
     </div>
 
 <script>
+    // ... (前面的所有不變的函數和 CSS 變數定義) ...
+
     // --- NEW: 專門更新主題圖示的函數 ---
     function updateThemeIcon() {
         const themeIcon = document.getElementById('themeIcon');
@@ -970,7 +980,9 @@ config:ics_repeat=3m
         const chatInput = document.getElementById('chatInput');
         const chatMessages = document.getElementById('chatMessages');
         const scheduleTextarea = document.getElementById('scheduleInput');
-        
+        const generateBtn = document.getElementById("generateBtn"); // 獲取生成按鈕
+        const messageDiv = document.getElementById("message"); // 獲取消息區域
+
         const isLoggedIn = document.getElementById('userInfo') !== null;
 
         // --- 函數定義 (您的所有原始函數保持不變) ---
@@ -1075,10 +1087,7 @@ config:ics_repeat=3m
             const dayHeaders = Array.from(grid.querySelectorAll(".grid-header"));
 
             timeSlots.forEach(slot => {
-                // --- FIX: 在重置時，不要移除 'expanded' class，這樣才能保留用戶的展開狀態 ---
                 slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse");
-                // --- END FIX ---
-                
                 slot.style.display = 'flex';
                 slot.querySelector('.content-normal').style.display = 'flex';
                 slot.querySelector('.content-collapsed').style.display = 'none';
@@ -1199,7 +1208,7 @@ config:ics_repeat=3m
             const button = document.getElementById(`export${type}Btn`);
             const originalText = button.innerHTML;
             // --- MODIFIED: Update button text content for image buttons ---
-            const buttonTextSpan = button.querySelector('span'); // Assuming text is wrapped in span
+            const buttonTextSpan = button.querySelector('span'); 
             const originalButtonText = buttonTextSpan ? buttonTextSpan.textContent : button.textContent;
             if (buttonTextSpan) buttonTextSpan.textContent = "生成中..."; else button.textContent = "生成中...";
             // ---
@@ -1292,6 +1301,9 @@ config:ics_repeat=3m
             return messageElement;
         }
 
+        // --- MODIFIED: 修改 parseAndApplySchedule 函數 ---
+        // 這個函數現在只需要更新 textarea 的值並點擊生成按鈕。
+        // 啟用/禁用聊天輸入的邏輯將在 scheduleForm 的 submit 監聽器中處理。
         function parseAndApplySchedule(text) {
             const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
             const match = text.match(scheduleRegex);
@@ -1304,9 +1316,20 @@ config:ics_repeat=3m
                     notification.style.opacity = '0';
                     setTimeout(() => notification.remove(), 500);
                 }, 4000);
-                document.getElementById('generateBtn').click();
+                
+                // --- NEW: 觸發生成按鈕，並由其監聽器處理後續狀態 ---
+                generateBtn.click(); 
+                // --- END NEW ---
+                
+                // 不在這裡重新啟用聊天輸入框
+            } else {
+                 // 如果 AI 回覆沒有 schedule block，才重新啟用聊天輸入框
+                 chatInput.disabled = false;
+                 chatForm.querySelector('button[type="submit"]').disabled = false;
+                 chatInput.focus();
             }
         }
+
 
         // --- Tooltip Logic ---
         let tooltipVisible = false;
@@ -1355,6 +1378,8 @@ config:ics_repeat=3m
 
         if (scheduleForm) {
             scheduleForm.addEventListener("submit", async function(event) {
+                // 這個監聽器現在負責禁用聊天輸入框，並在生成完成後根據情況重新啟用它
+                
                 event.preventDefault();
                 const generateBtn = document.getElementById("generateBtn");
                 const messageDiv = document.getElementById("message");
@@ -1363,6 +1388,12 @@ config:ics_repeat=3m
                 generateBtn.textContent = "生成中...";
                 messageDiv.innerHTML = '<div class="loading">正在解析語法並生成週習表...</div>';
                 document.getElementById("scheduleContent").classList.remove("visible");
+                
+                // --- NEW: 在生成前禁用聊天輸入框和按鈕 ---
+                chatInput.disabled = true;
+                chatForm.querySelector('button[type="submit"]').disabled = true;
+                // --- END NEW ---
+
 
                 try {
                     const response = await fetch("/api/generate", {
@@ -1385,6 +1416,15 @@ config:ics_repeat=3m
                 } finally {
                     generateBtn.disabled = false;
                     generateBtn.textContent = "生成週習表";
+                    
+                    // --- NEW: 在生成完成後根據情況重新啟用聊天輸入框和按鈕 ---
+                    // 只有在沒有達到使用上限時才重新啟用聊天輸入
+                    if (chatInput.placeholder !== "已達使用上限") {
+                        chatInput.disabled = false;
+                        chatForm.querySelector('button[type="submit"]').disabled = false;
+                        chatInput.focus(); // 讓使用者可以繼續輸入
+                    }
+                    // --- END NEW ---
                 }
             });
         }
@@ -1493,8 +1533,11 @@ config:ics_repeat=3m
                 addMessageToChat('user', message);
                 chatHistory.push({ role: 'user', parts: [message] });
                 chatInput.value = '';
-                chatInput.disabled = true; // 發送後暫時禁用
+                
+                // --- MODIFIED: 在發送 AI 請求前禁用輸入框和按鈕 ---
+                chatInput.disabled = true;
                 sendButton.disabled = true;
+                // --- END MODIFIED ---
 
                 const typingIndicator = addMessageToChat('ai typing', '...');
                 
@@ -1513,12 +1556,14 @@ config:ics_repeat=3m
                         if (response.status === 403) {
                             addMessageToChat('ai', error.error || '您已達到使用次數上限。');
                             chatInput.placeholder = "已達使用上限";
+                            // 保持禁用狀態
                         } else {
                             addMessageToChat('ai', `發生錯誤: ${error.error || '無法連接伺服器'}`);
+                             // 對於其他錯誤，重新啟用輸入
                             chatInput.disabled = false;
                             sendButton.disabled = false;
                         }
-                        return;
+                        return; // 錯誤發生時終止後續流程
                     }
 
                     const data = await response.json();
@@ -1527,18 +1572,26 @@ config:ics_repeat=3m
                     addMessageToChat('ai', aiReply);
                     chatHistory.push({ role: 'model', parts: [aiReply] });
 
-                    // parseAndApplySchedule 會自動點擊生成按鈕，生成成功後由新的監聽器處理儲存
+                    // parseAndApplySchedule 現在會根據 AI 回覆是否包含 schedule 來決定是否觸發生成
+                    // 如果沒有 schedule，它會直接重新啟用聊天輸入
+                    // 如果有 schedule，它會觸發生成按鈕，生成按鈕的監聽器會在生成完成後重新啟用聊天輸入
                     parseAndApplySchedule(aiReply);
 
                 } catch (error) {
                     typingIndicator.remove();
                     addMessageToChat('ai', `客戶端錯誤: ${error.message}`);
+                    // 客戶端錯誤發生，重新啟用輸入
+                    chatInput.disabled = false;
+                    sendButton.disabled = false;
                 } finally {
-                    if (chatInput.placeholder !== "已達使用上限") {
-                        chatInput.disabled = false;
-                        sendButton.disabled = false;
-                        chatInput.focus();
-                    }
+                    // 這個 finally 塊只處理 fetch 的同步部分或非 403 錯誤。
+                    // 重新啟用輸入的最終決定權現在交給 parseAndApplySchedule 或 scheduleForm 的 finally。
+                    // 所以這個 finally 塊可以移除重新啟用的邏輯。
+                    // if (chatInput.placeholder !== "已達使用上限") {
+                    //     chatInput.disabled = false;
+                    //     sendButton.disabled = false;
+                    //     chatInput.focus();
+                    // }
                 }
             });
         }
@@ -1632,7 +1685,7 @@ config:ics_repeat=3m
                 setTimeout(() => {
                     const currentUserEmail = storageManager.getCurrentUserEmail();
                      // 只有在有用戶登入且輸入框沒有被禁用（表示沒有遇到 403 錯誤）時才保存
-                    if(currentUserEmail && !chatInput.disabled) { 
+                    if(currentUserEmail && chatInput.placeholder !== "已達使用上限") { 
                         console.log(`Saving chat history for ${currentUserEmail}...`);
                          const currentData = storageManager.getDataForUser(currentUserEmail) || {};
                         storageManager.saveDataForUser(currentUserEmail, {
@@ -1640,7 +1693,7 @@ config:ics_repeat=3m
                             chatHistory: chatHistory // 保存更新後的聊天紀錄
                         });
                     } else {
-                         console.log("Chat failed or not logged in, skip saving chat history.");
+                         console.log("Chat failed or not logged in or usage limit reached, skip saving chat history.");
                     }
                 }, 500); // 延遲 500 毫秒
             });
@@ -1683,7 +1736,7 @@ config:ics_repeat=3m
                         // 如果聊天視窗預設是關閉的，這裡不需要打開它，用戶點擊 AI 按鈕時會打開
                         restoredSomething = true;
                     } else {
-                         // 如果沒有聊天紀錄，可以考慮清空 chatHistory 陣列（ যদিও定義時已經是空陣列了）
+                         // 如果沒有聊天紀錄，可以考慮清空 chatHistory 陣列（ Meskipun definisi sudah array kosong）
                          chatHistory = [];
                          // 並確保聊天視窗只有預設的問候語
                          chatMessages.innerHTML = '<div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>';
