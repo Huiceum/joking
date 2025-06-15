@@ -312,7 +312,7 @@ def api_chat():
         return jsonify({"error": "Empty message"}), 400
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash-preview-05-20')
         
         system_prompt = {
             'role': 'user', 

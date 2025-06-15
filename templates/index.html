@@ -25,7 +25,9 @@
             --success-bg: rgba(63, 185, 80, 0.1);
             --success-text: #3fb950;
             --dot-color: rgba(107, 147, 214, 0.2);
-            --icon-filter: brightness(0) invert(1);
+            /* --- MODIFIED: 更新 icon-filter 變數 --- */
+            --icon-filter: brightness(0) invert(1); /* 深色模式下，白色圖標保持白色 */
+            /* --- */
             --tooltip-bg: rgba(42, 42, 42, 0.6);
             --tooltip-border: rgba(255, 255, 255, 0.1);
             --tooltip-text: #ffffff;
@@ -58,7 +60,9 @@
             --success-bg: rgba(40, 167, 69, 0.1);
             --success-text: #28a745;
             --dot-color: rgba(74, 111, 165, 0.15);
-            --icon-filter: brightness(0) invert(0);
+            /* --- MODIFIED: 更新 icon-filter 變數 --- */
+            --icon-filter: brightness(0) invert(0); /* 淺色模式下，白色圖標反轉為黑色 */
+            /* --- */
             --tooltip-bg: rgba(249, 249, 249, 0.7);
             --tooltip-border: rgba(0, 0, 0, 0.1);
             --tooltip-text: #333333;
@@ -76,7 +80,7 @@
             --collapsed-block-height: 50px;
         }
 
-                /* --- 新增：右上角控制項容器 --- */
+        /* --- 新增：右上角控制項容器 --- */
         .top-right-controls {
             position: fixed;
             top: 20px;
@@ -166,7 +170,13 @@
             color: var(--text-color);
             user-select: none;
         }
-
+        /* --- MODIFIED: 主題切換按鈕中的圖片樣式 --- */
+        #themeToggle img {
+            width: 20px;
+            height: 20px;
+            filter: var(--icon-filter);
+        }
+        /* --- */
 
 
         .content-wrapper {
@@ -428,7 +438,13 @@
         .export-button { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; background: #00000000; backdrop-filter: blur(10px) saturate(180%); -webkit-backdrop-filter: blur(10px) saturate(180%); border: 1px solid var(--border-color); border-radius: 12px; cursor: pointer; font-size: 16px; font-weight: 500; text-decoration: none; color: var(--text-color); mix-blend-mode: difference; transition: all 0.3s ease; }
         .export-button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); background: #00000010; }
         .export-button:disabled { background: #00000010; border: 1px solid var(--border-color); cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.5; }
-        .export-icon { width: 20px; height: 20px; filter: var(--icon-filter); }
+        /* export-icon class 已有 filter, 我們只需確保圖片尺寸 */
+        .export-icon {
+            width: 20px;
+            height: 20px;
+            filter: var(--icon-filter); /* 確保 filter 應用於 img */
+        }
+
 
         @media (max-width: 768px) {
             body { padding: 0 10px; background-size: 15px 15px; }
@@ -559,8 +575,6 @@
          }
 
 
-         /* ... 在您的 style 標籤結尾處加入 ... */
-
         /* 使用者資訊 */
         .user-profile {
             position: fixed;
@@ -676,15 +690,33 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative; /* 為了讓關閉按鈕可以絕對定位 */
         }
-        .chat-header h3 { margin: 0; text-align: left; }
+        /* --- MODIFIED: 關閉聊天按鈕樣式 --- */
         .close-chat-btn {
             background: none;
             border: none;
-            font-size: 24px;
-            color: var(--text-color);
             cursor: pointer;
+            padding: 8px; /* 增加點擊區域 */
+            line-height: 0; /* 移除圖片下方多餘空間 */
+            position: absolute; /* 相對於 header 定位 */
+            top: 10px;
+            right: 10px;
         }
+
+        .close-chat-btn img {
+            width: 20px;
+            height: 20px;
+            filter: var(--icon-filter);
+            transition: transform 0.2s ease;
+        }
+
+        .close-chat-btn:hover img {
+            transform: scale(1.1);
+        }
+        /* --- */
+
+
         .chat-messages {
             flex-grow: 1;
             overflow-y: auto;
@@ -757,12 +789,10 @@
 </head>
 <body>
 
-        <!-- NEW: Tooltip Element -->
+    <!-- NEW: Tooltip Element -->
     <div id="activity-tooltip" class="activity-tooltip"></div>
 
     <!-- NEW: 統一的右上角控制項容器 -->
-    <div class="top-right-controls">
-        <!-- User Profile (如果已登入) -->
     <div class="top-right-controls">
         <!-- User Profile (如果已登入) -->
         {% if session %}
@@ -774,12 +804,12 @@
         </div>
         {% endif %}
 
-        <!-- Theme Toggle -->
+        <!-- --- MODIFIED: Theme Toggle 使用 img 替換 span --- -->
         <div id="themeToggle" class="theme-toggle glass-ui-element">
-            <span id="theme-text">dark</span>
+            <img id="themeIcon" src="" alt="Toggle Theme">
         </div>
 
-        <!-- AI Chat Button -->
+        <!-- AI Chat Button (使用 1.png) -->
         <button id="aiChatBtn" class="ai-chat-button glass-ui-element">
             <img src="{{ url_for('static', filename='icon/1.png') }}" alt="AI Chat">
         </button>
@@ -793,7 +823,10 @@
         <div class="chat-window">
             <div class="chat-header">
                 <h3>AI 作息諮詢師</h3>
-                <button id="closeChatBtn" class="close-chat-btn">×</button>
+                <!-- --- MODIFIED: Close Chat Button 使用 2.png --- -->
+                <button id="closeChatBtn" class="close-chat-btn">
+                    <img src="{{ url_for('static', filename='icon/2.png') }}" alt="Close Chat">
+                </button>
             </div>
             <div id="chatMessages" class="chat-messages">
                 <div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>
@@ -808,7 +841,9 @@
     </div>
 
     <div class="content-wrapper">
-        <h2 id="mainTitle">調味乳</h2>
+        <!-- --- MODIFIED: Change title text --- -->
+        <h2 id="mainTitle">生活週習表生成器</h2>
+        <!-- --- -->
         
         <div class="input-section">
             <form id="scheduleForm">
@@ -853,40 +888,58 @@ config:ics_repeat=3m
             </div>
             <div id="scheduleData"></div>
             <div class="export-buttons" id="exportContainer">
+                <!-- --- MODIFIED: 導出 PNG 按鈕，使用 6.png --- -->
                 <button class="export-button" id="exportPngBtn">
-                    <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                    <img class="export-icon" src="{{ url_for('static', filename='icon/6.png') }}" alt="Export PNG">
                     導出為 PNG
                 </button>
+                <!-- --- MODIFIED: 導出 PDF 按鈕，使用 5.png --- -->
                 <button class="export-button" id="exportPdfBtn">
-                    <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14,2 L20,8 L20,22 L4,22 L4,2 L14,2 Z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+                    <img class="export-icon" src="{{ url_for('static', filename='icon/5.png') }}" alt="Export PDF">
                     導出為 PDF
                 </button>
+                <!-- --- MODIFIED: 導出 ICS 按鈕，使用 7.png --- -->
                 <button class="export-button" id="exportIcsBtn">
-                    <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <img class="export-icon" src="{{ url_for('static', filename='icon/7.png') }}" alt="Export ICS">
                     添加到日曆 (.ics)
                 </button>
             </div>
         </div>
     </div>
 
-<!-- ... 你 index.html 的其他所有內容保持不變 ... -->
-<!-- 只需用下面的程式碼塊替換你現有的 <script> 標籤 -->
-
 <script>
-    // 將需要在全域範圍內訪問的函數定義在頂層
+    // --- NEW: 專門更新主題圖示的函數 ---
+    function updateThemeIcon() {
+        const themeIcon = document.getElementById('themeIcon');
+        if (!themeIcon) return; // 如果元素不存在則返回
+
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'light') {
+            // 在淺色模式下，顯示切換到深色的圖示 (4.png)
+            themeIcon.src = "{{ url_for('static', filename='icon/4.png') }}";
+            themeIcon.alt = "Switch to Dark Mode";
+        } else {
+            // 在深色模式下，顯示切換到淺色的圖示 (3.png)
+            themeIcon.src = "{{ url_for('static', filename='icon/3.png') }}";
+            themeIcon.alt = "Switch to Light Mode";
+        }
+    }
+
+    // --- MODIFIED: 修改 toggleTheme 和 loadTheme ---
     function toggleTheme() {
         const newTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', newTheme);
-        document.getElementById('theme-text').textContent = newTheme;
         localStorage.setItem('theme', newTheme);
-        // 觸發一個自定義事件，讓 DOMContentLoaded 內的監聽器知道主題已更改
+        
+        updateThemeIcon(); // 呼叫新函數來更新圖示
+        
         window.dispatchEvent(new Event('themeChanged'));
     }
 
     function loadTheme() {
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
-        document.getElementById('theme-text').textContent = savedTheme;
+        // 不再需要更新文字，圖示的更新將在 DOMContentLoaded 中完成
     }
 
     // 頁面加載時立即加載主題，避免閃爍
@@ -898,7 +951,7 @@ config:ics_repeat=3m
         let currentDayIndex = 0;
         let currentViewMode = "today"; // "today", "full-mobile", "full-desktop"
         const dayNames = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
-        let processedScheduleData = null;
+        let processedScheduleData = null; // 全局變數，用於儲存後端處理過的課表資料
 
         let normalRowHeight = 25;
         let collapsedBlockHeight = 50;
@@ -906,7 +959,6 @@ config:ics_repeat=3m
         let chatHistory = []; // 用來保存對話歷史
 
         // --- DOM 元素獲取 ---
-        // 修改為下面這一行
         const themeToggleBtn = document.getElementById('themeToggle');
         const scheduleDataContainer = document.getElementById('scheduleData');
         const scheduleForm = document.getElementById("scheduleForm");
@@ -919,10 +971,9 @@ config:ics_repeat=3m
         const chatMessages = document.getElementById('chatMessages');
         const scheduleTextarea = document.getElementById('scheduleInput');
         
-        // 檢查使用者是否登入
         const isLoggedIn = document.getElementById('userInfo') !== null;
 
-        // --- 函數定義 ---
+        // --- 函數定義 (您的所有原始函數保持不變) ---
 
         function getCssVariable(name) {
             const style = getComputedStyle(document.documentElement);
@@ -952,7 +1003,8 @@ config:ics_repeat=3m
         }
 
         function renderScheduleGrid(data) {
-            processedScheduleData = data;
+            // 這個函數會修改全局的 processedScheduleData，這對我們的儲存邏輯很重要
+            processedScheduleData = data; 
             updateCssVariables();
 
             const weekDays = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
@@ -1146,7 +1198,12 @@ config:ics_repeat=3m
             const grid = document.querySelector('.schedule-grid');
             const button = document.getElementById(`export${type}Btn`);
             const originalText = button.innerHTML;
-            button.innerHTML = `生成中...`;
+            // --- MODIFIED: Update button text content for image buttons ---
+            const buttonTextSpan = button.querySelector('span'); // Assuming text is wrapped in span
+            const originalButtonText = buttonTextSpan ? buttonTextSpan.textContent : button.textContent;
+            if (buttonTextSpan) buttonTextSpan.textContent = "生成中..."; else button.textContent = "生成中...";
+            // ---
+
             button.disabled = true;
 
             grid.classList.add('is-printing');
@@ -1186,12 +1243,13 @@ config:ics_repeat=3m
             } finally {
                 grid.classList.remove('is-printing');
                 updateTableView();
-                button.innerHTML = originalText;
+                // --- MODIFIED: Restore button text ---
+                 if (buttonTextSpan) buttonTextSpan.textContent = originalButtonText; else button.textContent = originalButtonText;
+                // ---
                 button.disabled = false;
             }
         }
 
-        // --- NEW: 解析並渲染 AI 回覆的函數 ---
         function renderAiMessage(text) {
             const container = document.createDocumentFragment();
             const scheduleRegex = /```schedule\n([\s\S]*?)\n```/g;
@@ -1199,24 +1257,18 @@ config:ics_repeat=3m
             let match;
 
             while ((match = scheduleRegex.exec(text)) !== null) {
-                // 加入匹配前的普通文本
                 if (match.index > lastIndex) {
                     const textNode = document.createElement('span');
                     textNode.innerHTML = text.substring(lastIndex, match.index).replace(/\n/g, '<br>');
                     container.appendChild(textNode);
                 }
-
-                // 加入特殊樣式的 schedule 區塊
                 const scheduleContent = match[1];
                 const scheduleBlock = document.createElement('div');
                 scheduleBlock.className = 'ai-schedule-block';
                 scheduleBlock.textContent = scheduleContent;
                 container.appendChild(scheduleBlock);
-
                 lastIndex = scheduleRegex.lastIndex;
             }
-
-            // 加入最後一次匹配後剩餘的普通文本
             if (lastIndex < text.length) {
                 const textNode = document.createElement('span');
                 textNode.innerHTML = text.substring(lastIndex).replace(/\n/g, '<br>');
@@ -1225,55 +1277,40 @@ config:ics_repeat=3m
             return container;
         }
 
-        // --- MODIFIED: 新增聊天訊息的函數 ---
         function addMessageToChat(sender, text) {
             const messageElement = document.createElement('div');
             const classes = sender.split(' ');
             messageElement.classList.add('message', ...classes);
-
-            // 如果是 AI 回覆且不是 "輸入中..."，則解析特殊格式
             if (sender.includes('ai') && !sender.includes('typing')) {
                 const content = renderAiMessage(text);
                 messageElement.appendChild(content);
             } else {
-                // 對於使用者訊息或 "輸入中..."，直接顯示文字
                 messageElement.innerHTML = text.replace(/\n/g, '<br>');
             }
-            
             chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight; // 自動滾動到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
             return messageElement;
         }
 
-        // 修改後的程式碼 (覆蓋模式)
         function parseAndApplySchedule(text) {
             const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
             const match = text.match(scheduleRegex);
-
             if (match && match[1]) {
                 const newEntries = match[1].trim();
-                
-                // 1. 將 textarea 的值設定為 AI 產生的內容
-                scheduleTextarea.value = newEntries + '\n'; 
-                
-                // 2. 顯示一個短暫的提示訊息
+                scheduleTextarea.value = newEntries + '\n';
                 const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容，並正在為您生成圖表...');
                 setTimeout(() => {
                     notification.style.transition = 'opacity 0.5s';
                     notification.style.opacity = '0';
                     setTimeout(() => notification.remove(), 500);
-                }, 4000); // 延長一點提示時間
-
-                // --- NEW: 自動觸發生成按鈕的點擊事件 ---
+                }, 4000);
                 document.getElementById('generateBtn').click();
-                // --- END NEW ---
             }
         }
 
         // --- Tooltip Logic ---
         let tooltipVisible = false;
         let activeTooltipTarget = null;
-
         const showTooltip = (target, event) => {
             const note = target.dataset.note;
             if (!note) return;
@@ -1284,13 +1321,11 @@ config:ics_repeat=3m
             activeTooltipTarget = target;
             updateTooltipPosition(event);
         };
-
         const hideTooltip = () => {
             tooltip.classList.remove('visible');
             tooltipVisible = false;
             activeTooltipTarget = null;
         };
-
         const updateTooltipPosition = (event) => {
             if (!tooltipVisible || !activeTooltipTarget) return;
             const offsetX = 15, offsetY = 15;
@@ -1306,8 +1341,8 @@ config:ics_repeat=3m
         };
 
         // --- 事件監聽器綁定 ---
+        // (這些是原始的監聽器設定，LOCAL STORAGE LOGIC會在它們之後新增疊代監聽器)
 
-        // 主題切換
         if (themeToggleBtn) {
             themeToggleBtn.addEventListener('click', toggleTheme);
         }
@@ -1318,7 +1353,6 @@ config:ics_repeat=3m
             }
         });
 
-        // 生成週習表
         if (scheduleForm) {
             scheduleForm.addEventListener("submit", async function(event) {
                 event.preventDefault();
@@ -1339,7 +1373,7 @@ config:ics_repeat=3m
                     const result = await response.json();
                     if (result.status === "success") {
                         messageDiv.innerHTML = '<div class="success">週習表生成成功！</div>';
-                        renderScheduleGrid(result.data);
+                        renderScheduleGrid(result.data); // 這會更新全局的 processedScheduleData
                         document.getElementById("scheduleContent").classList.add("visible");
                         document.getElementById("exportContainer").style.display = "flex";
                         setupMobileView();
@@ -1355,20 +1389,16 @@ config:ics_repeat=3m
             });
         }
 
-        // 導出按鈕
         document.getElementById("exportPngBtn")?.addEventListener("click", () => performExport("Png"));
         document.getElementById("exportPdfBtn")?.addEventListener("click", () => performExport("Pdf"));
         document.getElementById("exportIcsBtn")?.addEventListener("click", () => window.location.href = '/api/export/ics');
         
-        // 行動裝置控制
         document.getElementById("prevDay")?.addEventListener("click", () => { if (currentDayIndex > 0) { currentDayIndex--; updateTableView(); } });
         document.getElementById("nextDay")?.addEventListener("click", () => { if (currentDayIndex < 6) { currentDayIndex++; updateTableView(); } });
         document.getElementById("toggleViewBtn")?.addEventListener("click", () => { if (window.innerWidth <= 768) { currentViewMode = (currentViewMode === "today") ? "full-mobile" : "today"; updateTableView(); } });
         
-        // 視窗大小調整
         window.addEventListener("resize", setupMobileView);
 
-        // Tooltip 和 Grid 互動 (事件代理)
         if (scheduleDataContainer) {
             scheduleDataContainer.addEventListener('mouseover', (event) => {
                 if (window.innerWidth > 768) {
@@ -1427,10 +1457,10 @@ config:ics_repeat=3m
             }
         }, true);
 
-        // --- MODIFIED: AI 聊天互動 ---
         if (aiChatBtn) {
             aiChatBtn.addEventListener('click', () => {
-                if (isLoggedIn) {
+                const currentUserEmail = document.getElementById('userInfo')?.dataset.email; // 重新獲取登入狀態
+                if (currentUserEmail) { // 檢查是否有 email，而不是只檢查 userInfo 元素是否存在
                     chatModal.classList.add('is-open');
                 } else {
                     window.location.href = "{{ url_for('login') }}";
@@ -1497,6 +1527,7 @@ config:ics_repeat=3m
                     addMessageToChat('ai', aiReply);
                     chatHistory.push({ role: 'model', parts: [aiReply] });
 
+                    // parseAndApplySchedule 會自動點擊生成按鈕，生成成功後由新的監聽器處理儲存
                     parseAndApplySchedule(aiReply);
 
                 } catch (error) {
@@ -1511,21 +1542,24 @@ config:ics_repeat=3m
                 }
             });
         }
-
-        // --- 初始設定 ---
-        updateCssVariables();
+        // --- 原始事件監聽器綁定結束 ---
 
 
-
-                const storageManager = {
-            STORAGE_KEY: 'weeklyScheduleAppData',
+        // =========================================================================
+        // --- LOCAL STORAGE LOGIC (在所有原始代碼之後新增) ---
+        // =========================================================================
+        
+        const storageManager = {
+            STORAGE_KEY: 'weeklyScheduleAppData', // 主儲存鍵
 
             getCurrentUserEmail() {
+                // 從 userInfo 元素的 data-email 屬性獲取當前登入用戶的 email
                 const userInfoDiv = document.getElementById('userInfo');
                 return userInfoDiv ? userInfoDiv.dataset.email : null;
             },
 
             _getStorage() {
+                // 從 localStorage 讀取所有用戶數據
                 try {
                     const data = localStorage.getItem(this.STORAGE_KEY);
                     return data ? JSON.parse(data) : {};
@@ -1535,19 +1569,24 @@ config:ics_repeat=3m
                 }
             },
 
+            // 獲取指定用戶的數據
             getDataForUser(email) {
                 if (!email) return null;
                 const storage = this._getStorage();
-                return storage[email] || null;
+                return storage[email] || null; // 如果該用戶沒有數據，返回 null
             },
 
+            // 儲存指定用戶的數據
             saveDataForUser(email, dataToSave) {
-                if (!email) return;
+                if (!email) return; // 沒有 email (未登入) 不儲存
                 const storage = this._getStorage();
-                storage[email] = dataToSave;
+                // 這裡直接覆蓋該用戶的數據，確保是最新的狀態
+                storage[email] = dataToSave; 
                 localStorage.setItem(this.STORAGE_KEY, JSON.stringify(storage));
+                console.log(`Data saved for user: ${email}`);
             },
             
+            // 清除所有本地存儲的數據 (用於登出或未登入)
             clearAllData() {
                 localStorage.removeItem(this.STORAGE_KEY);
                 console.log("All user data cleared from localStorage.");
@@ -1556,58 +1595,76 @@ config:ics_repeat=3m
 
         // --- 增強現有功能以進行保存 ---
 
-        // 1. 增強: 生成課表成功後, 保存敘述文本和課表數據
-        scheduleForm.addEventListener('submit', () => {
-            // 這個監聽器會在原始監聽器之後執行。
-            // 我們延遲一點執行，以確保原始的 fetch 已經完成且 processedScheduleData 已更新。
-            setTimeout(() => {
-                const messageDiv = document.getElementById("message");
-                // 檢查成功消息是否存在
-                if (messageDiv.querySelector('.success') && processedScheduleData) {
-                    const currentUserEmail = storageManager.getCurrentUserEmail();
-                    console.log(`Saving schedule data for ${currentUserEmail}...`);
-                    const currentData = storageManager.getDataForUser(currentUserEmail) || {};
-                    storageManager.saveDataForUser(currentUserEmail, {
-                        ...currentData,
-                        scheduleInput: scheduleTextarea.value,
-                        processedData: processedScheduleData 
-                    });
-                }
-            }, 100); // 延遲 100 毫秒
-        });
+        // 我們利用事件冒泡或者在原始監聽器之後再綁定一個新的監聽器來實現不修改原始函數。
+        // 由於原始的 scheduleForm submit 監聽器是 async 並有 await，
+        // 新增的監聽器會在原始監聽器同步部分執行後、await 之前或之後執行。
+        // 使用 setTimeout 可以確保在原始的 fetch 成功並更新了 processedScheduleData 後再嘗試保存。
 
-        // 2. 增強: AI 對話後, 保存對話歷史
-        chatForm.addEventListener('submit', () => {
-             // 同樣延遲執行以確保 chatHistory 數組已更新
-            setTimeout(() => {
-                // 只有在輸入框不是禁用狀態時才保存 (避免錯誤時保存)
-                if(!chatInput.disabled) {
-                    const currentUserEmail = storageManager.getCurrentUserEmail();
-                    console.log(`Saving chat history for ${currentUserEmail}...`);
-                    const currentData = storageManager.getDataForUser(currentUserEmail) || {};
-                    storageManager.saveDataForUser(currentUserEmail, {
-                        ...currentData,
-                        chatHistory: chatHistory
-                    });
-                }
-            }, 100);
-        });
-
-        // 3. 增強: 登出時清除所有數據
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                // 在跳轉前清除數據
-                storageManager.clearAllData();
+        if (scheduleForm) {
+             // 疊代新增一個 submit 事件監聽器，用於保存數據
+            scheduleForm.addEventListener('submit', () => {
+                // 延遲執行以確保原始的 fetch 已經完成且 processedScheduleData 已更新
+                setTimeout(() => {
+                     // 檢查全局變數 processedScheduleData 是否有值，這表示原始生成成功了
+                    if (processedScheduleData) { 
+                        const currentUserEmail = storageManager.getCurrentUserEmail();
+                        if (currentUserEmail) {
+                            console.log(`Saving schedule data for ${currentUserEmail}...`);
+                            // 獲取當前用戶可能已有的聊天紀錄等數據，然後更新或添加課表相關數據
+                             const currentData = storageManager.getDataForUser(currentUserEmail) || {};
+                            storageManager.saveDataForUser(currentUserEmail, {
+                                ...currentData, // 保留原有的數據 (例如聊天紀錄)
+                                scheduleInput: scheduleTextarea.value, // 保存文字輸入
+                                processedData: processedScheduleData // 保存處理後的數據 (用於直接還原課表)
+                            });
+                        }
+                    } else {
+                         console.log("Schedule generation failed or not completed, skip saving schedule data.");
+                    }
+                }, 500); // 延遲 500 毫秒，給原始 fetch 足夠時間
             });
         }
 
+        if (chatForm) {
+            // 疊代新增一個 submit 事件監聽器，用於保存對話歷史
+            chatForm.addEventListener('submit', () => {
+                 // 延遲執行以確保 chatHistory 數組已更新
+                setTimeout(() => {
+                    const currentUserEmail = storageManager.getCurrentUserEmail();
+                     // 只有在有用戶登入且輸入框沒有被禁用（表示沒有遇到 403 錯誤）時才保存
+                    if(currentUserEmail && !chatInput.disabled) { 
+                        console.log(`Saving chat history for ${currentUserEmail}...`);
+                         const currentData = storageManager.getDataForUser(currentUserEmail) || {};
+                        storageManager.saveDataForUser(currentUserEmail, {
+                            ...currentData, // 保留原有的數據 (例如課表)
+                            chatHistory: chatHistory // 保存更新後的聊天紀錄
+                        });
+                    } else {
+                         console.log("Chat failed or not logged in, skip saving chat history.");
+                    }
+                }, 500); // 延遲 500 毫秒
+            });
+        }
+
+        // 增強: 登出時清除所有數據 (這會替換原始的 href 跳轉前的動作，但因為沒有 preventDefault，跳轉仍會發生)
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            // 使用 capture 階段的事件監聽器，嘗試在連結的默認行為發生之前執行
+            logoutBtn.addEventListener('click', (e) => {
+                console.log("Logout button clicked, clearing all stored data.");
+                storageManager.clearAllData();
+                // 不阻止默認行為，讓連結正常跳轉到登出 URL
+            }, true); // 使用 capture 階段
+        }
+
+
         // --- 頁面初始化邏輯 ---
+        // 在頁面載入時執行，從本地儲存還原數據或清除數據
         function initializeAppFromStorage() {
             const currentUserEmail = storageManager.getCurrentUserEmail();
 
             if (currentUserEmail) {
-                console.log(`User ${currentUserEmail} is logged in. Attempting to load data...`);
+                console.log(`User ${currentUserEmail} is logged in. Attempting to load data from localStorage...`);
                 const userData = storageManager.getDataForUser(currentUserEmail);
 
                 if (userData) {
@@ -1616,50 +1673,96 @@ config:ics_repeat=3m
 
                     // 還原對話歷史
                     if (userData.chatHistory && Array.isArray(userData.chatHistory) && userData.chatHistory.length > 0) {
-                        chatHistory = userData.chatHistory;
+                        console.log("Restoring chat history...");
+                        chatHistory = userData.chatHistory; // 更新全局的 chatHistory 變數
                         chatMessages.innerHTML = ''; // 清空預設的 "你好"
                         chatHistory.forEach(msg => {
-                            addMessageToChat(msg.role === 'user' ? 'user' : 'ai', msg.parts[0]);
+                             // 注意：這裡只是渲染，不應該再次觸發 parseAndApplySchedule
+                            addMessageToChat(msg.role === 'user' ? 'user' : 'ai', msg.parts[0]); 
                         });
+                        // 如果聊天視窗預設是關閉的，這裡不需要打開它，用戶點擊 AI 按鈕時會打開
                         restoredSomething = true;
+                    } else {
+                         // 如果沒有聊天紀錄，可以考慮清空 chatHistory 陣列（ যদিও定義時已經是空陣列了）
+                         chatHistory = [];
+                         // 並確保聊天視窗只有預設的問候語
+                         chatMessages.innerHTML = '<div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>';
                     }
+
 
                     // 還原課表敘述文本
-                    if (userData.scheduleInput) {
+                    if (userData.scheduleInput !== undefined && userData.scheduleInput !== null) {
+                         console.log("Restoring schedule input text...");
                         scheduleTextarea.value = userData.scheduleInput;
                         restoredSomething = true;
+                    } else {
+                         scheduleTextarea.value = ''; // 如果沒有儲存的輸入，清空 textarea
                     }
 
-                    // 還原已生成的課表本身 (最高效的方式)
+
+                    // 還原已生成的課表本身 (如果存在，直接渲染，避免重新生成)
                     if (userData.processedData) {
-                        console.log("Restoring schedule grid directly...");
+                        console.log("Restoring schedule grid directly from saved data...");
+                        // 顯示成功消息和課表區域
                         document.getElementById("message").innerHTML = '<div class="success">已從您的儲存紀錄中還原課表！</div>';
-                        renderScheduleGrid(userData.processedData);
+                        renderScheduleGrid(userData.processedData); // 使用原始的渲染函數
                         document.getElementById("scheduleContent").classList.add("visible");
                         document.getElementById("exportContainer").style.display = "flex";
-                        setupMobileView();
+                        setupMobileView(); // 確保在還原後設定好行動裝置視圖
                         restoredSomething = true;
+                    } else {
+                         // 如果沒有儲存的 processedData，確保課表區域是隱藏的
+                         document.getElementById("scheduleContent").classList.remove("visible");
+                         document.getElementById("exportContainer").style.display = "none";
                     }
+
 
                     if (restoredSomething) {
                          console.log("Data restoration complete.");
+                         // 如果恢復了課表，但沒有恢復聊天記錄，可以保留預設問候語
+                         if (!userData.chatHistory || userData.chatHistory.length === 0) {
+                              chatMessages.innerHTML = '<div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>';
+                         }
+
                     } else {
-                         console.log("No specific data to restore found in user's record.");
+                         console.log("No specific data to restore found for this user.");
+                         // 如果什麼都沒有恢復，確保 UI 是乾淨的預設狀態
+                         chatHistory = [];
+                         chatMessages.innerHTML = '<div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>';
+                         scheduleTextarea.value = '';
+                         document.getElementById("scheduleContent").classList.remove("visible");
+                         document.getElementById("exportContainer").style.display = "none";
                     }
 
                 } else {
-                    console.log(`No saved data found for ${currentUserEmail}.`);
+                    // 如果沒有找到該用戶的數據，確保 UI 是乾淨的預設狀態
+                    console.log(`No saved data found for ${currentUserEmail}. Starting fresh UI.`);
+                    chatHistory = [];
+                    chatMessages.innerHTML = '<div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>';
+                    scheduleTextarea.value = '';
+                    document.getElementById("scheduleContent").classList.remove("visible");
+                    document.getElementById("exportContainer").style.display = "none";
                 }
 
             } else {
-                // 如果沒有登入, 為了安全, 清除所有本地存儲的用戶數據
+                // 如果沒有偵測到登入用戶，為了安全，清除所有本地存儲的用戶數據
                 console.log("No user logged in. Clearing all app data for privacy.");
-                storageManager.clearAllData();
+                storageManager.clearAllData(); // 清空所有用戶數據
+                // 同時確保當前 UI 是乾淨的預設狀態
+                chatHistory = [];
+                chatMessages.innerHTML = '<div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>';
+                scheduleTextarea.value = '';
+                document.getElementById("scheduleContent").classList.remove("visible");
+                document.getElementById("exportContainer").style.display = "none";
             }
         }
         
-        // 執行初始化
-        initializeAppFromStorage();
+        // --- 頁面載入時的最終初始化 ---
+        // 確保在所有原始代碼和新增的增強監聽器設置完畢後執行
+        updateCssVariables(); // 確保 CSS 變數正確設定
+        updateThemeIcon(); // 確保主題圖示在 DOM 載入後正確顯示
+        initializeAppFromStorage(); // 執行本地儲存的初始化和數據還原
+
 
     });
 </script>
