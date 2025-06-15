@@ -806,9 +806,11 @@
     <div class="top-right-controls">
         <!-- User Profile (如果已登入) -->
         {% if session %}
-        <!-- --- MODIFIED: 在 userInfo 上添加 data-email 屬性 --- -->
         <div id="userInfo" class="glass-ui-element" data-email="{{ session.email }}">
+            <!-- --- NEW: 添加顯示用戶姓名的 span --- -->
             <span class="username">{{ session.name }}</span>
+            <!-- --- NEW: 添加顯示用戶 email 的 span --- -->
+            <span class="user-email" style="font-size: 0.8em; color: var(--text-muted-color);">{{ session.email }}</span>
             <!-- --- MODIFIED: 為登出按鈕添加 id --- -->
             <a href="{{ url_for('logout') }}" id="logoutBtn" class="logout-btn">登出</a>
         </div>
