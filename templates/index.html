@@ -76,6 +76,38 @@
             --collapsed-block-height: 50px;
         }
 
+                /* --- 新增：右上角控制項容器 --- */
+        .top-right-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000; /* 確保在內容之上，但在聊天視窗之下 */
+            display: flex;
+            align-items: center;
+            gap: 10px; /* 控制項之間的間距 */
+        }
+
+        /* --- 新增：玻璃材質 UI 元素 --- */
+        .glass-ui-element {
+            /* 從 tooltip 複製過來的玻璃效果 */
+            background: var(--tooltip-bg)!important; 
+            border: 1px solid var(--tooltip-border)!important;
+            backdrop-filter: blur(10px) saturate(180%)!important;
+            -webkit-backdrop-filter: blur(10px) saturate(180%)!important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2)!important;
+            
+            /* 通用樣式 */
+            display: flex!important;
+            align-items: center!important;
+            justify-content: center!important;
+            cursor: pointer!important;
+            transition: all 0.3s ease!important;
+        }
+        .glass-ui-element:hover {
+            box-shadow: var(--hover-glow)!important;
+            transform: translateY(-2px)!important;
+        }
+
         body {
             font-family: 'Noto Sans TC', Arial, sans-serif;
             background-color: var(--bg-color);
@@ -125,10 +157,22 @@
             transform: scale(1);
         }
 
+        .theme-toggle {
+            /* 移除 position, top, right, background-color, padding, gap, font-size */
+            border-radius: 8px; /* 方形圓角 */
+            height: 40px;
+            padding: 0 15px; /* 左右留白 */
+            font-size: 14px;
+            color: var(--text-color);
+            user-select: none;
+        }
+
+
+
         .content-wrapper {
             width: 100%;
             max-width: 1400px;
-            margin: 80px 0 20px 0; /* 增加上邊距以容納新按鈕 */
+            margin: 60px 0 20px 0;
             padding: 2.5rem;
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
@@ -388,7 +432,8 @@
 
         @media (max-width: 768px) {
             body { padding: 0 10px; background-size: 15px 15px; }
-            .content-wrapper { max-width: 100%; margin: 70px 0 15px 0; padding: 1.5rem 1rem; border-radius: 8px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+            .theme-toggle { top: 15px; right: 15px; padding: 6px 12px; font-size: 12px; }
+            .content-wrapper { max-width: 100%; margin: 50px 0 15px 0; padding: 1.5rem 1rem; border-radius: 8px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
             #mobileControls { display: flex; }
 
             /* Mobile Today View Grid Layout */
@@ -514,51 +559,40 @@
          }
 
 
-        /* --- NEW: 統一控制按鈕樣式 --- */
-        .top-right-controls {
+         /* ... 在您的 style 標籤結尾處加入 ... */
+
+        /* 使用者資訊 */
+        .user-profile {
             position: fixed;
             top: 20px;
-            right: 20px;
+            left: 20px;
             z-index: 1000;
-            display: flex;
-            gap: 10px;
         }
-        .control-button {
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            color: var(--text-color);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            user-select: none;
-            transition: all 0.3s ease;
-
-            /* 玻璃擬態風格 (來自 tooltip) */
-            background: var(--tooltip-bg);
-            border: 1px solid var(--tooltip-border);
-            backdrop-filter: blur(10px) saturate(180%);
-            -webkit-backdrop-filter: blur(10px) saturate(180%);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    /* 修改後的 #userInfo */
+    #userInfo {
+        /* 移除 background, box-shadow */
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 5px 12px; /* 調整內邊距 */
+        border-radius: 8px; /* 統一圓角 */
+        height: 40px;
+        box-sizing: border-box;
+    }
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
         }
-        .control-button:hover {
-            box-shadow: var(--hover-glow);
-            transform: translateY(-2px);
-        }
-        .control-button .logout-btn {
-            /* 讓登出連結看起來不像按鈕中的按鈕 */
-            text-decoration: none;
-            color: var(--text-muted-color);
+        .username { font-size: 14px; }
+        .logout-btn {
             font-size: 12px;
-            background: none;
-            padding: 0;
-            margin-left: 5px;
+            color: var(--text-muted-color);
+            text-decoration: none;
+            background: var(--bg-color);
+            padding: 4px 8px;
+            border-radius: 10px;
         }
-        .control-button .logout-btn:hover {
-            color: var(--text-color);
-        }
-        /* --- END NEW --- */
 
         /* AI 聊天按鈕 */
         .ai-chat-container {
@@ -567,30 +601,23 @@
             right: 30px;
             z-index: 998;
         }
+        /* 修改後的 .ai-chat-button */
         .ai-chat-button {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background-color: var(--primary-accent-color);
+            /* 移除 position, bottom, right, background-color, box-shadow */
+            width: 40px;
+            height: 40px;
+            border-radius: 8px; /* 統一為方形圓角 */
             border: none;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
+            /* display, justify-content, align-items, cursor, transition 已在 .glass-ui-element 中定義 */
         }
-        .ai-chat-button:hover {
-            transform: scale(1.1);
-            box-shadow: var(--hover-glow);
-        }
+        /* .ai-chat-button:hover 的 transform 和 box-shadow 已被 .glass-ui-element:hover 取代 */
         .ai-chat-button img {
-            width: 32px;
-            height: 32px;
+            width: 28px; /* 稍微調整圖示大小以適應新按鈕尺寸 */
+            height: 28px;
             filter: brightness(0) invert(1);
         }
 
-        /* --- MODIFIED: 聊天視窗 (Chat Modal) --- */
+        /* --- NEW: 聊天視窗 (Chat Modal) --- */
         .chat-modal {
             display: none; /* 由 JS class 'is-open' 控制 */
             position: fixed;
@@ -598,7 +625,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 2000; /* 提高 z-index，使其在最上層 */
+            z-index: 1010; /* << 修改這裡 */
             background-color: transparent; /* 遮罩背景色會漸變 */
             transition: background-color 0.4s ease;
         }
@@ -613,7 +640,6 @@
             flex-direction: column;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             transition: transform 0.4s ease-in-out;
-            position: relative; /* 為了絕對定位關閉按鈕 */
         }
         /* 手機模式 (預設): 全螢幕，由下往上滑入 */
         .chat-window {
@@ -642,6 +668,7 @@
                 transform: translateX(0);
             }
         }
+        /* --- END NEW: 聊天視窗 --- */
 
         .chat-header {
             padding: 15px;
@@ -651,26 +678,13 @@
             align-items: center;
         }
         .chat-header h3 { margin: 0; text-align: left; }
-        
-        /* MODIFIED: 關閉按鈕樣式 */
         .close-chat-btn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            z-index: 10;
             background: none;
             border: none;
             font-size: 24px;
-            color: var(--text-muted-color);
-            cursor: pointer;
-            padding: 5px;
-            line-height: 1;
-        }
-        .close-chat-btn:hover {
             color: var(--text-color);
+            cursor: pointer;
         }
-        /* --- END MODIFIED --- */
-
         .chat-messages {
             flex-grow: 1;
             overflow-y: auto;
@@ -742,42 +756,40 @@
     </style>
 </head>
 <body>
-    <!-- NEW: Tooltip Element -->
+
+        <!-- NEW: Tooltip Element -->
     <div id="activity-tooltip" class="activity-tooltip"></div>
 
-    <!-- MODIFIED: 將登入/登出和主題切換按鈕組合併 -->
+    <!-- NEW: 統一的右上角控制項容器 -->
     <div class="top-right-controls">
+        <!-- User Profile (如果已登入) -->
         {% if session %}
-        <div id="userInfo" class="control-button">
-            <span>{{ session.name }}</span>
+        <div id="userInfo" class="glass-ui-element">
+            <span class="username">{{ session.name }}</span>
             <a href="{{ url_for('logout') }}" class="logout-btn">登出</a>
         </div>
-        {% else %}
-        <a href="{{ url_for('login') }}" id="loginBtn" class="control-button" style="text-decoration: none;">
-            <span>登入</span>
-        </a>
         {% endif %}
-        <div id="themeToggle" class="control-button">
+
+        <!-- Theme Toggle -->
+        <div id="themeToggle" class="theme-toggle glass-ui-element">
             <span id="theme-text">dark</span>
         </div>
-    </div>
 
-
-    <!-- AI Chat Button -->
-    <div class="ai-chat-container">
-        <button id="aiChatBtn" class="ai-chat-button">
+        <!-- AI Chat Button -->
+        <button id="aiChatBtn" class="ai-chat-button glass-ui-element">
             <img src="{{ url_for('static', filename='icon/1.png') }}" alt="AI Chat">
         </button>
     </div>
+    <!-- NEW: Tooltip Element -->
+    <div id="activity-tooltip" class="activity-tooltip"></div>
+
 
     <!-- AI Chat Modal -->
     <div id="chatModal" class="chat-modal">
         <div class="chat-window">
-            <!-- MODIFIED: 關閉按鈕移到這裡 -->
-            <button id="closeChatBtn" class="close-chat-btn">×</button>
             <div class="chat-header">
                 <h3>AI 作息諮詢師</h3>
-                <!-- 關閉按鈕已從此處移除 -->
+                <button id="closeChatBtn" class="close-chat-btn">×</button>
             </div>
             <div id="chatMessages" class="chat-messages">
                 <div class="message ai">你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？</div>
@@ -887,8 +899,7 @@ config:ics_repeat=3m
         let chatHistory = []; // 用來保存對話歷史
 
         // --- DOM 元素獲取 ---
-        // MODIFIED: 更新主題切換按鈕的選擇器
-        const themeToggleBtn = document.getElementById('themeToggle'); 
+        const themeToggleBtn = document.querySelector('.theme-toggle');
         const scheduleDataContainer = document.getElementById('scheduleData');
         const scheduleForm = document.getElementById("scheduleForm");
         const tooltip = document.getElementById('activity-tooltip');
@@ -1223,26 +1234,26 @@ config:ics_repeat=3m
             return messageElement;
         }
 
-        // MODIFIED: 覆蓋模式
-        function parseAndApplySchedule(text) {
-            const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
-            const match = text.match(scheduleRegex);
+// 修改後的程式碼 (覆蓋模式)
+function parseAndApplySchedule(text) {
+    const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
+    const match = text.match(scheduleRegex);
 
-            if (match && match[1]) {
-                const newEntries = match[1].trim();
-                
-                // 直接將 textarea 的值設定為 AI 產生的內容，實現覆蓋效果
-                scheduleTextarea.value = newEntries + '\n'; 
-                
-                // 同時，更新提示訊息，讓使用者更清楚發生了什麼事
-                const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容！');
-                setTimeout(() => {
-                    notification.style.transition = 'opacity 0.5s';
-                    notification.style.opacity = '0';
-                    setTimeout(() => notification.remove(), 500);
-                }, 3000);
-            }
-        }
+    if (match && match[1]) {
+        const newEntries = match[1].trim();
+        
+        // 直接將 textarea 的值設定為 AI 產生的內容，實現覆蓋效果
+        scheduleTextarea.value = newEntries + '\n'; 
+        
+        // 同時，更新提示訊息，讓使用者更清楚發生了什麼事
+        const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容！');
+        setTimeout(() => {
+            notification.style.transition = 'opacity 0.5s';
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
+    }
+}
 
         // --- Tooltip Logic ---
         let tooltipVisible = false;
