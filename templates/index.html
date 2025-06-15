@@ -1118,10 +1118,17 @@ config:ics_repeat=3m
 
         function addMessageToChat(sender, text) {
             const messageElement = document.createElement('div');
-            messageElement.classList.add('message', sender);
+            
+            // 修正：將 sender 字串按空格拆分，並逐個添加到 classList
+            const classes = sender.split(' ');
+            messageElement.classList.add('message', ...classes); // 使用展開運算符 (...)
+
+            // 使用 innerHTML 來渲染 Markdown (例如換行)
+            // 注意：在真實產品中，需要對 text 進行淨化以防止 XSS
             messageElement.innerHTML = text.replace(/\n/g, '<br>');
+            
             chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatMessages.scrollTop = chatMessages.scrollHeight; // 自動滾動到底部
             return messageElement;
         }
 
