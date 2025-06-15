@@ -591,6 +591,7 @@
             text-decoration: none;
             padding: 4px 8px;
             border-radius: 10px;
+            background-color: #00000000;
         }
 
         /* AI 聊天按鈕 */
@@ -803,7 +804,7 @@
     </div>
 
     <div class="content-wrapper">
-        <h2 id="mainTitle">生活週習表生成器</h2>
+        <h2 id="mainTitle">調味乳</h2>
         
         <div class="input-section">
             <form id="scheduleForm">
@@ -1248,16 +1249,20 @@ config:ics_repeat=3m
             if (match && match[1]) {
                 const newEntries = match[1].trim();
                 
-                // 直接將 textarea 的值設定為 AI 產生的內容，實現覆蓋效果
+                // 1. 將 textarea 的值設定為 AI 產生的內容
                 scheduleTextarea.value = newEntries + '\n'; 
                 
-                // 同時，更新提示訊息，讓使用者更清楚發生了什麼事
-                const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容！');
+                // 2. 顯示一個短暫的提示訊息
+                const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容，並正在為您生成圖表...');
                 setTimeout(() => {
                     notification.style.transition = 'opacity 0.5s';
                     notification.style.opacity = '0';
                     setTimeout(() => notification.remove(), 500);
-                }, 3000);
+                }, 4000); // 延長一點提示時間
+
+                // --- NEW: 自動觸發生成按鈕的點擊事件 ---
+                document.getElementById('generateBtn').click();
+                // --- END NEW ---
             }
         }
 
