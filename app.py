@@ -40,7 +40,7 @@ app.config['SERVER_NAME'] = os.environ.get('SERVER_NAME') # 用於生成絕對 U
 
 # --- NEW: 資料庫與使用限制設定 ---
 DATABASE = 'usage.db'
-MAX_AI_USAGE = 2  # 設定每個用戶最多能使用 20 次 AI
+MAX_AI_USAGE = 20  # 設定每個用戶最多能使用 20 次 AI
 
 def get_db_connection():
     """建立並返回一個資料庫連線"""

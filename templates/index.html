@@ -763,10 +763,14 @@
     <!-- NEW: 統一的右上角控制項容器 -->
     <div class="top-right-controls">
         <!-- User Profile (如果已登入) -->
+    <div class="top-right-controls">
+        <!-- User Profile (如果已登入) -->
         {% if session %}
-        <div id="userInfo" class="glass-ui-element">
+        <!-- --- MODIFIED: 在 userInfo 上添加 data-email 屬性 --- -->
+        <div id="userInfo" class="glass-ui-element" data-email="{{ session.email }}">
             <span class="username">{{ session.name }}</span>
-            <a href="{{ url_for('logout') }}" class="logout-btn">登出</a>
+            <!-- --- MODIFIED: 為登出按鈕添加 id --- -->
+            <a href="{{ url_for('logout') }}" id="logoutBtn" class="logout-btn">登出</a>
         </div>
         {% endif %}
 
@@ -890,19 +894,61 @@ config:ics_repeat=3m
 
     // 當 DOM 完全加載後，再執行與 DOM 元素相關的操作
     document.addEventListener("DOMContentLoaded", () => {
+        // --- NEW: 本地儲存邏輯 ---
+        const STORAGE_KEY = 'weeklyScheduleAppData';
+        
+        // 安全地獲取當前登入用戶的 email
+        const getCurrentUserEmail = () => {
+            const userInfoDiv = document.getElementById('userInfo');
+            return userInfoDiv ? userInfoDiv.dataset.email : null;
+        };
+
+        // 獲取所有儲存的資料
+        const getStoredData = () => {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : {};
+            } catch (e) {
+                console.error("Error parsing stored data:", e);
+                return {};
+            }
+        };
+        
+        // 儲存指定用戶的資料
+        const saveUserData = (email, dataToSave) => {
+            if (!email) return; // 如果沒有用戶登入，不儲存
+            const allData = getStoredData();
+            allData[email] = {
+                ... (allData[email] || {}), // 保留該用戶的其他可能資料
+                ...dataToSave
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(allData));
+        };
+
+        // 載入指定用戶的資料
+        const loadUserData = (email) => {
+            if (!email) return null;
+            const allData = getStoredData();
+            return allData[email] || null;
+        };
+        
+        // 清除所有用戶資料 (用於登出或未登入狀態)
+        const clearAllUserData = () => {
+            localStorage.removeItem(STORAGE_KEY);
+            console.log("All user data cleared from localStorage.");
+        };
+        // --- END NEW ---
+
         // --- 變數定義 ---
         let currentDayIndex = 0;
-        let currentViewMode = "today"; // "today", "full-mobile", "full-desktop"
+        let currentViewMode = "today";
         const dayNames = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
         let processedScheduleData = null;
-
         let normalRowHeight = 25;
         let collapsedBlockHeight = 50;
-        
-        let chatHistory = []; // 用來保存對話歷史
+        let chatHistory = []; // 將從 localStorage 載入
 
         // --- DOM 元素獲取 ---
-        // 修改為下面這一行
         const themeToggleBtn = document.getElementById('themeToggle');
         const scheduleDataContainer = document.getElementById('scheduleData');
         const scheduleForm = document.getElementById("scheduleForm");
@@ -914,12 +960,10 @@ config:ics_repeat=3m
         const chatInput = document.getElementById('chatInput');
         const chatMessages = document.getElementById('chatMessages');
         const scheduleTextarea = document.getElementById('scheduleInput');
-        
-        // 檢查使用者是否登入
-        const isLoggedIn = document.getElementById('userInfo') !== null;
+        const logoutBtn = document.getElementById('logoutBtn');
+        const currentUserEmail = getCurrentUserEmail();
 
         // --- 函數定義 ---
-
         function getCssVariable(name) {
             const style = getComputedStyle(document.documentElement);
             return parseFloat(style.getPropertyValue(name).replace('px', ''));
@@ -1019,10 +1063,7 @@ config:ics_repeat=3m
             const dayHeaders = Array.from(grid.querySelectorAll(".grid-header"));
 
             timeSlots.forEach(slot => {
-                // --- FIX: 在重置時，不要移除 'expanded' class，這樣才能保留用戶的展開狀態 ---
                 slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse");
-                // --- END FIX ---
-                
                 slot.style.display = 'flex';
                 slot.querySelector('.content-normal').style.display = 'flex';
                 slot.querySelector('.content-collapsed').style.display = 'none';
@@ -1046,20 +1087,13 @@ config:ics_repeat=3m
                 grid.style.setProperty('--mobile-sub-columns', mobileSubCols);
                 grid.classList.add("mobile-today-view");
                 grid.style.gridTemplateColumns = `60px repeat(var(--mobile-sub-columns), 1fr)`;
-
                 dayContainers.forEach(container => {
-                    if (container.dataset.dayIndex != currentDayIndex) {
-                        container.classList.add("day-hidden");
-                    } else {
-                        container.style.gridColumn = '2 / span var(--mobile-sub-columns)';
-                    }
+                    if (container.dataset.dayIndex != currentDayIndex) container.classList.add("day-hidden");
+                    else container.style.gridColumn = '2 / span var(--mobile-sub-columns)';
                 });
                 dayHeaders.forEach(header => {
-                    if (header.dataset.dayIndex != currentDayIndex) {
-                        header.classList.add("day-hidden");
-                    } else {
-                        header.style.gridColumn = '2 / -1';
-                    }
+                    if (header.dataset.dayIndex != currentDayIndex) header.classList.add("day-hidden");
+                    else header.style.gridColumn = '2 / -1';
                 });
             } else if (isMobile && currentViewMode === "full-mobile") {
                 document.getElementById("toggleViewBtn").textContent = "單日檢視";
@@ -1071,47 +1105,32 @@ config:ics_repeat=3m
             const rowHeights = Array(48).fill(`${normalRowHeight}px`);
             let currentBlock = null;
             let collapsibleBlocks = [];
-
             const isSlotEmptyInCurrentView = (slotIndex) => {
                 for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
                     if (isMobile && currentViewMode === "today" && dayIdx != currentDayIndex) continue;
-                    const activitiesInSlotOnDay = processedScheduleData.day_activities[dayIdx].filter(act =>
-                        act.start_slot <= slotIndex && act.end_slot > slotIndex
-                    );
-                    if (activitiesInSlotOnDay.length > 0) return false;
+                    if (processedScheduleData.day_activities[dayIdx].some(act => act.start_slot <= slotIndex && act.end_slot > slotIndex)) return false;
                 }
                 return true;
             };
 
             for (let i = 0; i < timeSlots.length; i++) {
-                const slotIndex = parseInt(timeSlots[i].dataset.slotIndex);
-                if (isSlotEmptyInCurrentView(slotIndex)) {
-                    if (currentBlock === null) {
-                        currentBlock = { startSlotIdx: i, endSlotIdx: i };
-                    } else {
-                        currentBlock.endSlotIdx = i;
-                    }
+                if (isSlotEmptyInCurrentView(i)) {
+                    if (currentBlock === null) currentBlock = { startSlotIdx: i, endSlotIdx: i };
+                    else currentBlock.endSlotIdx = i;
                 } else {
                     if (currentBlock !== null) {
-                        if (currentBlock.endSlotIdx > currentBlock.startSlotIdx) {
-                            collapsibleBlocks.push(currentBlock);
-                        }
+                        if (currentBlock.endSlotIdx > currentBlock.startSlotIdx) collapsibleBlocks.push(currentBlock);
                         currentBlock = null;
                     }
                 }
             }
-            if (currentBlock !== null && currentBlock.endSlotIdx > currentBlock.startSlotIdx) {
-                collapsibleBlocks.push(currentBlock);
-            }
+            if (currentBlock !== null && currentBlock.endSlotIdx > currentBlock.startSlotIdx) collapsibleBlocks.push(currentBlock);
 
             collapsibleBlocks.forEach(block => {
                 const headerSlotEl = timeSlots[block.startSlotIdx];
                 if (!headerSlotEl) return;
                 const isExpanded = headerSlotEl.classList.contains('expanded');
                 headerSlotEl.classList.add("row-expandable");
-                headerSlotEl.dataset.groupStart = timeSlots[block.startSlotIdx].dataset.slotIndex;
-                headerSlotEl.dataset.groupEnd = timeSlots[block.endSlotIdx].dataset.slotIndex;
-
                 if (!isExpanded) {
                     headerSlotEl.classList.add("is-collapsed-merged");
                     const startTimeText = timeSlots[block.startSlotIdx].querySelector('.content-normal').textContent.trim();
@@ -1120,15 +1139,11 @@ config:ics_repeat=3m
                     headerSlotEl.querySelector('.content-collapsed').textContent = `${startTimeText} - ${endTime}`;
                     headerSlotEl.querySelector('.content-normal').style.display = 'none';
                     headerSlotEl.querySelector('.content-collapsed').style.display = 'inline';
-
                     for (let k = block.startSlotIdx + 1; k <= block.endSlotIdx; k++) {
                         if (timeSlots[k]) timeSlots[k].classList.add("cell-hidden-by-collapse");
                     }
-                    
                     rowHeights[block.startSlotIdx] = `${collapsedBlockHeight}px`;
-                    for (let k = block.startSlotIdx + 1; k <= block.endSlotIdx; k++) {
-                        rowHeights[k] = `0px`;
-                    }
+                    for (let k = block.startSlotIdx + 1; k <= block.endSlotIdx; k++) rowHeights[k] = `0px`;
                 }
             });
 
@@ -1144,21 +1159,18 @@ config:ics_repeat=3m
             const originalText = button.innerHTML;
             button.innerHTML = `生成中...`;
             button.disabled = true;
-
             grid.classList.add('is-printing');
             grid.classList.remove('mobile-today-view', 'mobile-full-view');
-            grid.style.gridTemplateColumns = "100px repeat(7, 1fr)";
+            grid.style.gridTemplateColumns = `100px repeat(7, 1fr)`;
             grid.style.gridTemplateRows = `auto repeat(48, ${normalRowHeight}px)`;
-
             grid.querySelectorAll('.grid-slot-time, .grid-activity').forEach(el => {
                 el.classList.remove("row-expandable", "is-collapsed-merged", "expanded", "cell-hidden-by-collapse", "activity-hidden-by-collapse");
                 el.style.display = '';
-                if(el.querySelector('.content-normal')) {
+                if (el.querySelector('.content-normal')) {
                     el.querySelector('.content-normal').style.display = 'flex';
                     el.querySelector('.content-collapsed').style.display = 'none';
                 }
             });
-
             try {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 const canvas = await html2canvas(grid, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
@@ -1170,9 +1182,7 @@ config:ics_repeat=3m
                 } else if (type === 'Pdf') {
                     const { jsPDF } = window.jspdf;
                     const imgData = canvas.toDataURL('image/png');
-                    const aspectRatio = canvas.width / canvas.height;
-                    let orientation = canvas.width > canvas.height ? 'l' : 'p';
-                    const pdf = new jsPDF({ orientation: orientation, unit: 'px', format: [canvas.width, canvas.height] });
+                    const pdf = new jsPDF({ orientation: canvas.width > canvas.height ? 'l' : 'p', unit: 'px', format: [canvas.width, canvas.height] });
                     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
                     pdf.save('weekly_schedule.pdf');
                 }
@@ -1187,32 +1197,23 @@ config:ics_repeat=3m
             }
         }
 
-        // --- NEW: 解析並渲染 AI 回覆的函數 ---
         function renderAiMessage(text) {
             const container = document.createDocumentFragment();
             const scheduleRegex = /```schedule\n([\s\S]*?)\n```/g;
-            let lastIndex = 0;
-            let match;
-
+            let lastIndex = 0, match;
             while ((match = scheduleRegex.exec(text)) !== null) {
-                // 加入匹配前的普通文本
                 if (match.index > lastIndex) {
                     const textNode = document.createElement('span');
                     textNode.innerHTML = text.substring(lastIndex, match.index).replace(/\n/g, '<br>');
                     container.appendChild(textNode);
                 }
-
-                // 加入特殊樣式的 schedule 區塊
                 const scheduleContent = match[1];
                 const scheduleBlock = document.createElement('div');
                 scheduleBlock.className = 'ai-schedule-block';
                 scheduleBlock.textContent = scheduleContent;
                 container.appendChild(scheduleBlock);
-
                 lastIndex = scheduleRegex.lastIndex;
             }
-
-            // 加入最後一次匹配後剩餘的普通文本
             if (lastIndex < text.length) {
                 const textNode = document.createElement('span');
                 textNode.innerHTML = text.substring(lastIndex).replace(/\n/g, '<br>');
@@ -1221,56 +1222,37 @@ config:ics_repeat=3m
             return container;
         }
 
-        // --- MODIFIED: 新增聊天訊息的函數 ---
         function addMessageToChat(sender, text) {
             const messageElement = document.createElement('div');
             const classes = sender.split(' ');
             messageElement.classList.add('message', ...classes);
-
-            // 如果是 AI 回覆且不是 "輸入中..."，則解析特殊格式
             if (sender.includes('ai') && !sender.includes('typing')) {
-                const content = renderAiMessage(text);
-                messageElement.appendChild(content);
+                messageElement.appendChild(renderAiMessage(text));
             } else {
-                // 對於使用者訊息或 "輸入中..."，直接顯示文字
                 messageElement.innerHTML = text.replace(/\n/g, '<br>');
             }
-            
             chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight; // 自動滾動到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
             return messageElement;
         }
 
-        // 修改後的程式碼 (覆蓋模式)
         function parseAndApplySchedule(text) {
             const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
             const match = text.match(scheduleRegex);
-
             if (match && match[1]) {
                 const newEntries = match[1].trim();
-                
-                // 1. 將 textarea 的值設定為 AI 產生的內容
-                scheduleTextarea.value = newEntries + '\n'; 
-                
-                // 2. 顯示一個短暫的提示訊息
+                scheduleTextarea.value = newEntries + '\n';
                 const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容，並正在為您生成圖表...');
                 setTimeout(() => {
                     notification.style.transition = 'opacity 0.5s';
                     notification.style.opacity = '0';
                     setTimeout(() => notification.remove(), 500);
-                }, 4000); // 延長一點提示時間
-
-                // --- NEW: 自動觸發生成按鈕的點擊事件 ---
+                }, 4000);
                 document.getElementById('generateBtn').click();
-                // --- END NEW ---
             }
         }
 
-        // --- Tooltip Logic ---
-        let tooltipVisible = false;
-        let activeTooltipTarget = null;
-
-        const showTooltip = (target, event) => {
+        function showTooltip(target, event) {
             const note = target.dataset.note;
             if (!note) return;
             if (tooltipVisible && activeTooltipTarget && activeTooltipTarget !== target) hideTooltip();
@@ -1279,15 +1261,15 @@ config:ics_repeat=3m
             tooltipVisible = true;
             activeTooltipTarget = target;
             updateTooltipPosition(event);
-        };
+        }
 
-        const hideTooltip = () => {
+        function hideTooltip() {
             tooltip.classList.remove('visible');
             tooltipVisible = false;
             activeTooltipTarget = null;
-        };
+        }
 
-        const updateTooltipPosition = (event) => {
+        function updateTooltipPosition(event) {
             if (!tooltipVisible || !activeTooltipTarget) return;
             const offsetX = 15, offsetY = 15;
             const tooltipRect = tooltip.getBoundingClientRect();
@@ -1299,28 +1281,21 @@ config:ics_repeat=3m
             if (y < 5) y = 5;
             tooltip.style.left = `${x}px`;
             tooltip.style.top = `${y}px`;
-        };
+        }
 
         // --- 事件監聽器綁定 ---
 
-        // 主題切換
-        if (themeToggleBtn) {
-            themeToggleBtn.addEventListener('click', toggleTheme);
-        }
+        if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
         window.addEventListener('themeChanged', () => {
             updateCssVariables();
-            if (processedScheduleData) {
-                updateTableView();
-            }
+            if (processedScheduleData) updateTableView();
         });
 
-        // 生成週習表
         if (scheduleForm) {
             scheduleForm.addEventListener("submit", async function(event) {
                 event.preventDefault();
                 const generateBtn = document.getElementById("generateBtn");
                 const messageDiv = document.getElementById("message");
-
                 generateBtn.disabled = true;
                 generateBtn.textContent = "生成中...";
                 messageDiv.innerHTML = '<div class="loading">正在解析語法並生成週習表...</div>';
@@ -1339,6 +1314,8 @@ config:ics_repeat=3m
                         document.getElementById("scheduleContent").classList.add("visible");
                         document.getElementById("exportContainer").style.display = "flex";
                         setupMobileView();
+                        // NEW: 成功生成後儲存資料
+                        saveUserData(currentUserEmail, { scheduleInput: scheduleTextarea.value });
                     } else {
                         messageDiv.innerHTML = `<div class="error">生成失敗: ${result.message}</div>`;
                     }
@@ -1350,132 +1327,62 @@ config:ics_repeat=3m
                 }
             });
         }
+        
+        // NEW: 登出按鈕事件
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                // 在跳轉前清除本地資料
+                clearAllUserData();
+                // 瀏覽器將會繼續執行 href 的跳轉
+            });
+        }
 
-        // 導出按鈕
         document.getElementById("exportPngBtn")?.addEventListener("click", () => performExport("Png"));
         document.getElementById("exportPdfBtn")?.addEventListener("click", () => performExport("Pdf"));
         document.getElementById("exportIcsBtn")?.addEventListener("click", () => window.location.href = '/api/export/ics');
-        
-        // 行動裝置控制
         document.getElementById("prevDay")?.addEventListener("click", () => { if (currentDayIndex > 0) { currentDayIndex--; updateTableView(); } });
         document.getElementById("nextDay")?.addEventListener("click", () => { if (currentDayIndex < 6) { currentDayIndex++; updateTableView(); } });
         document.getElementById("toggleViewBtn")?.addEventListener("click", () => { if (window.innerWidth <= 768) { currentViewMode = (currentViewMode === "today") ? "full-mobile" : "today"; updateTableView(); } });
-        
-        // 視窗大小調整
         window.addEventListener("resize", setupMobileView);
 
-        // Tooltip 和 Grid 互動 (事件代理)
         if (scheduleDataContainer) {
-            scheduleDataContainer.addEventListener('mouseover', (event) => {
-                if (window.innerWidth > 768) {
-                    const target = event.target.closest('.grid-activity[data-note]');
-                    if (target && !target.classList.contains('activity-hidden-by-collapse')) {
-                        showTooltip(target, event);
-                    }
-                }
-            });
-
-            scheduleDataContainer.addEventListener('mouseout', (event) => {
-                if (window.innerWidth > 768) {
-                    const target = event.target.closest('.grid-activity[data-note]');
-                    if (target) hideTooltip();
-                }
-            });
-
-            scheduleDataContainer.addEventListener('mousemove', (event) => {
-                if (window.innerWidth > 768) updateTooltipPosition(event);
-            });
-
+            scheduleDataContainer.addEventListener('mouseover', (event) => { if (window.innerWidth > 768) { const target = event.target.closest('.grid-activity[data-note]'); if (target && !target.classList.contains('activity-hidden-by-collapse')) showTooltip(target, event); } });
+            scheduleDataContainer.addEventListener('mouseout', (event) => { if (window.innerWidth > 768) { const target = event.target.closest('.grid-activity[data-note]'); if (target) hideTooltip(); } });
+            scheduleDataContainer.addEventListener('mousemove', (event) => { if (window.innerWidth > 768) updateTooltipPosition(event); });
             scheduleDataContainer.addEventListener('click', (event) => {
-                // 行動裝置 Tooltip
-                if (window.innerWidth <= 768) {
-                    const target = event.target.closest('.grid-activity[data-note]');
-                    if (target && !target.classList.contains('activity-hidden-by-collapse')) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        if (tooltipVisible && activeTooltipTarget === target) {
-                            hideTooltip();
-                        } else {
-                            showTooltip(target, event);
-                        }
-                    } else if (tooltipVisible) {
-                        hideTooltip();
-                    }
-                }
-                
-                // 摺疊/展開行
+                if (window.innerWidth <= 768) { const target = event.target.closest('.grid-activity[data-note]'); if (target && !target.classList.contains('activity-hidden-by-collapse')) { event.preventDefault(); event.stopPropagation(); if (tooltipVisible && activeTooltipTarget === target) hideTooltip(); else showTooltip(target, event); } else if (tooltipVisible) { hideTooltip(); } }
                 const expandableRow = event.target.closest(".grid-slot-time.row-expandable");
-                if (expandableRow) {
-                    expandableRow.classList.toggle("expanded");
-                    updateTableView();
-                    if (tooltipVisible && activeTooltipTarget && activeTooltipTarget.classList.contains('activity-hidden-by-collapse')) {
-                        hideTooltip();
-                    }
-                }
-            });
-        }
-        
-        document.body.addEventListener('click', (event) => {
-            if (window.innerWidth <= 768 && tooltipVisible) {
-                if (!tooltip.contains(event.target) && !event.target.closest('.grid-activity[data-note]')) {
-                    hideTooltip();
-                }
-            }
-        }, true);
-
-        // --- MODIFIED: AI 聊天互動 ---
-        if (aiChatBtn) {
-            aiChatBtn.addEventListener('click', () => {
-                if (isLoggedIn) {
-                    chatModal.classList.add('is-open');
-                } else {
-                    window.location.href = "{{ url_for('login') }}";
-                }
+                if (expandableRow) { expandableRow.classList.toggle("expanded"); updateTableView(); if (tooltipVisible && activeTooltipTarget && activeTooltipTarget.classList.contains('activity-hidden-by-collapse')) hideTooltip(); }
             });
         }
 
-        if (closeChatBtn) {
-            closeChatBtn.addEventListener('click', () => {
-                chatModal.classList.remove('is-open');
-            });
-        }
+        document.body.addEventListener('click', (event) => { if (window.innerWidth <= 768 && tooltipVisible) { if (!tooltip.contains(event.target) && !event.target.closest('.grid-activity[data-note]')) hideTooltip(); } }, true);
 
-        if (chatModal) {
-            chatModal.addEventListener('click', (e) => {
-                if (e.target === chatModal) { // 點擊遮罩時關閉
-                    chatModal.classList.remove('is-open');
-                }
-            });
-        }
+        if (aiChatBtn) aiChatBtn.addEventListener('click', () => { if (currentUserEmail) chatModal.classList.add('is-open'); else window.location.href = "/login"; });
+        if (closeChatBtn) closeChatBtn.addEventListener('click', () => chatModal.classList.remove('is-open'));
+        if (chatModal) chatModal.addEventListener('click', (e) => { if (e.target === chatModal) chatModal.classList.remove('is-open'); });
 
         if (chatForm) {
             chatForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const message = chatInput.value.trim();
                 if (!message) return;
-
                 const sendButton = chatForm.querySelector('button[type="submit"]');
-
                 addMessageToChat('user', message);
                 chatHistory.push({ role: 'user', parts: [message] });
                 chatInput.value = '';
-                chatInput.disabled = true; // 發送後暫時禁用
+                chatInput.disabled = true;
                 sendButton.disabled = true;
-
                 const typingIndicator = addMessageToChat('ai typing', '...');
-                
                 try {
                     const response = await fetch("{{ url_for('api_chat') }}", {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ message: message, history: chatHistory }),
                     });
-                    
                     typingIndicator.remove();
-
                     if (!response.ok) {
                         const error = await response.json();
-                        
                         if (response.status === 403) {
                             addMessageToChat('ai', error.error || '您已達到使用次數上限。');
                             chatInput.placeholder = "已達使用上限";
@@ -1486,15 +1393,13 @@ config:ics_repeat=3m
                         }
                         return;
                     }
-
                     const data = await response.json();
                     const aiReply = data.reply;
-
                     addMessageToChat('ai', aiReply);
                     chatHistory.push({ role: 'model', parts: [aiReply] });
-
+                    // NEW: 成功對話後儲存資料
+                    saveUserData(currentUserEmail, { chatHistory: chatHistory });
                     parseAndApplySchedule(aiReply);
-
                 } catch (error) {
                     typingIndicator.remove();
                     addMessageToChat('ai', `客戶端錯誤: ${error.message}`);
@@ -1508,8 +1413,45 @@ config:ics_repeat=3m
             });
         }
 
-        // --- 初始設定 ---
-        updateCssVariables();
+        // --- NEW: 頁面初始化邏輯 ---
+        function initializeApp() {
+            if (currentUserEmail) {
+                console.log(`User ${currentUserEmail} is logged in. Loading data...`);
+                const userData = loadUserData(currentUserEmail);
+
+                if (userData) {
+                    console.log("Found saved data:", userData);
+                    // 1. 還原聊天紀錄
+                    if (userData.chatHistory && Array.isArray(userData.chatHistory) && userData.chatHistory.length > 0) {
+                        chatHistory = userData.chatHistory;
+                        chatMessages.innerHTML = ''; // 清空預設的 "你好" 訊息
+                        chatHistory.forEach(msg => {
+                            const sender = msg.role === 'user' ? 'user' : 'ai';
+                            const text = msg.parts[0] || '';
+                            addMessageToChat(sender, text);
+                        });
+                    }
+
+                    // 2. 還原行事曆輸入並自動生成
+                    if (userData.scheduleInput) {
+                        scheduleTextarea.value = userData.scheduleInput;
+                        console.log("Restoring schedule and auto-generating...");
+                        document.getElementById('generateBtn').click();
+                    }
+                } else {
+                    console.log(`No saved data found for ${currentUserEmail}.`);
+                }
+
+            } else {
+                // 如果沒有偵測到登入用戶，清除所有資料以保護隱私
+                console.log("No user logged in. Clearing all stored data.");
+                clearAllUserData();
+            }
+            updateCssVariables();
+        }
+
+        // --- 執行初始化 ---
+        initializeApp();
     });
 </script>
 </body>
