@@ -170,6 +170,7 @@
             /* 移除 position, top, right, background-color, padding, gap, font-size */
             border-radius: 8px; /* 方形圓角 */
             height: 40px;
+            padding: 0 15px; /* 左右留白 */
             font-size: 14px;
             color: var(--text-color);
             user-select: none;
@@ -300,7 +301,8 @@
         .schedule-grid {
             display: grid;
             /* Time column + 7 Day Containers */
-            grid-template-columns: 100px repeat(7, 1fr);
+            /* MODIFIED: Time column width is now fixed */
+            grid-template-columns: 100px repeat(7, 1fr); 
             /* Header row + 48 time rows - heights managed by JS */
             grid-template-rows: auto repeat(48, var(--normal-row-height)); /* Default heights */
             gap: 2px;
@@ -322,7 +324,16 @@
             top: 0;
             z-index: 3; /* Above day containers */
         }
-        .grid-time-header { grid-column: 1; left: 0; z-index: 4; } /* Corner cell */
+        .grid-time-header { 
+            grid-column: 1; 
+            left: 0; 
+            z-index: 4; /* Corner cell */
+            /* MODIFIED: Style for the time column header */
+            padding: 0.5em 0; /* Add some padding */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
         .grid-header { /* grid-column set by JS */ text-align: center; }
 
         /* Time Column Cells */
@@ -343,6 +354,9 @@
             border-radius: 4px;
             overflow: hidden; /* Hide content when row is tiny */
             transition: background-color 0.3s ease, border-color 0.3s ease;
+            /* MODIFIED: Removed height and ensured it doesn't block content */
+            height: 100%; /* Take full height of its grid row */
+            box-sizing: border-box;
         }
 
         /* Day Column Containers (hold activities) */
@@ -926,8 +940,6 @@ config:ics_repeat=3m
     </div>
 
 <script>
-    // ... (前面的所有不變的函數和 CSS 變數定義) ...
-
     // --- NEW: 專門更新主題圖示的函數 ---
     function updateThemeIcon() {
         const themeIcon = document.getElementById('themeIcon');
@@ -993,8 +1005,6 @@ config:ics_repeat=3m
         const generateBtn = document.getElementById("generateBtn"); // 獲取生成按鈕
         const messageDiv = document.getElementById("message"); // 獲取消息區域
         const logoutBtn = document.getElementById('logoutBtn'); // 獲取登出按鈕
-
-        // const isLoggedIn = document.getElementById('userInfo') !== null; // 不再使用這個簡單判斷
 
         // --- Local Storage Manager ---
         const storageManager = {
@@ -1074,12 +1084,7 @@ config:ics_repeat=3m
                      console.error(`Error clearing chat history for ${email}:`, e);
                 }
             }
-             // Note: We don't need a method to clear *all* localStorage,
-             // only user-specific chat and global schedule separately if needed.
-             // Clearing everything on logout is too aggressive for the schedule data requirement.
         };
-
-        // --- 函數定義 (您的所有原始函數保持不變，但會被修改以使用 storageManager) ---
 
         function getCssVariable(name) {
             const style = getComputedStyle(document.documentElement);
@@ -1127,13 +1132,15 @@ config:ics_repeat=3m
             const numSlots = 48;
 
             let html = '<div class="schedule-grid">';
-            html += '<div class="grid-cell grid-time-header"></div>';
+            // MODIFIED: Time column header is now just a cell
+            html += '<div class="grid-cell grid-time-header">時間</div>'; 
             for (let i = 0; i < 7; i++) {
                 html += `<div class="grid-cell grid-header" data-day-index="${i}" style="grid-column: ${i + 2};">${weekDays[i]}</div>`;
             }
 
             for (let slotIdx = 0; slotIdx < numSlots; slotIdx++) {
                 const startTime = `${String(Math.floor(slotIdx / 2)).padStart(2, '0')}:${String((slotIdx % 2) * 30).padStart(2, '0')}`;
+                // MODIFIED: Each slot is now a simple div for time display
                 html += `
                     <div class="grid-cell grid-slot-time" data-slot-index="${slotIdx}" style="grid-row: ${slotIdx + 2};">
                        <span class="content-normal">${startTime}</span>
@@ -1166,7 +1173,7 @@ config:ics_repeat=3m
                              data-slot-index="${activity.start_slot}"
                              data-day-index="${activity.day}"
                              data-end-slot="${activity.end_slot}"
-                             style="grid-row: ${activity.start_slot + 1} / span ${duration}; grid-column: ${activity.col_index + 1} / span ${colSpan};">
+                             style="grid-row: ${activity.start_slot + 2} / span ${duration}; grid-column: ${activity.col_index + 1} / span ${colSpan};">
                             ${activity.name}
                         </div>
                     `;
@@ -1191,7 +1198,7 @@ config:ics_repeat=3m
             const dayHeaders = Array.from(grid.querySelectorAll(".grid-header"));
 
             timeSlots.forEach(slot => {
-                slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse");
+                slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse", "expanded");
                 slot.style.display = 'flex';
                 slot.querySelector('.content-normal').style.display = 'flex';
                 slot.querySelector('.content-collapsed').style.display = 'none';
