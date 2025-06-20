@@ -177,8 +177,8 @@
         }
         /* --- MODIFIED: 主題切換按鈕中的圖片樣式 --- */
         #themeToggle img {
-            width: 20px;
-            height: 20px;
+            width: 28px;
+            height: 28px;
             filter: var(--icon-filter);
         }
         /* --- */
@@ -329,6 +329,7 @@
         .grid-header { /* grid-column set by JS */ text-align: center; }
 
         /* Time Column Cells */
+        /* Time Column Cells */
         .grid-slot-time {
             grid-column: 1;
             /* grid-row set by JS */
@@ -340,9 +341,9 @@
             z-index: 2; /* Above day containers */
             font-size: 11px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;  /* 【修改】讓內容從頂部開始對齊 */
             justify-content: center;
-            padding: 4px;
+            padding: 4px; /* 原有的 padding 會在頂部留出 4px 的空間，效果不錯 */
             border-radius: 4px;
             overflow: hidden; /* Hide content when row is tiny */
             transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -419,13 +420,16 @@
         }
 
         /* Style the header of the collapsed block (the first time slot cell) */
+        /* Style the header of the collapsed block (the first time slot cell) */
         .grid-slot-time.is-collapsed-merged {
-             background-color: var(--surface-color) !important; /* Lighter background */
-             border: 1px dashed var(--border-color) !important; /* Dashed border */
-             color: var(--text-color) !important; /* Ensure text is visible */
-             font-weight: 500 !important;
-             justify-content: center !important;
-             /* Height is controlled by grid-template-rows on the parent */
+            background-color: var(--surface-color) !important; /* Lighter background */
+            border: 1px dashed var(--border-color) !important; /* Dashed border */
+            color: var(--text-color) !important; /* Ensure text is visible */
+            font-weight: 500 !important;
+            justify-content: center !important;
+            /* 【新增】讓合併後區塊的文字恢復垂直置中，視覺上更平衡 */
+            align-items: center !important;
+            /* Height is controlled by grid-template-rows on the parent */
         }
          .grid-slot-time.is-collapsed-merged:hover {
              background-color: var(--bg-color) !important; /* Darker hover */
