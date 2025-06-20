@@ -175,14 +175,12 @@
             color: var(--text-color);
             user-select: none;
         }
-        /* --- MODIFIED: 主題切換按鈕中的圖片樣式 --- */
+
         #themeToggle img {
             width: 28px;
             height: 28px;
             filter: var(--icon-filter);
         }
-        /* --- */
-
 
         .content-wrapper {
             width: 100%;
@@ -328,39 +326,25 @@
         .grid-time-header { grid-column: 1; left: 0; z-index: 4; } /* Corner cell */
         .grid-header { /* grid-column set by JS */ text-align: center; }
 
-        /* --- MODIFICATION START: Time Column Cells for "On the Line" Style --- */
+        /* Time Column Cells */
         .grid-slot-time {
             grid-column: 1;
+            /* grid-row set by JS */
             color: var(--text-muted-color);
             font-weight: 500;
             background-color: var(--bg-color);
             position: sticky;
             left: 0;
-            z-index: 2;
+            z-index: 2; /* Above day containers */
             font-size: 11px;
-            
-            /* Change to block positioning context */
-            display: block; 
-            position: relative; 
-            overflow: visible; /* Allow text to overflow upwards */
-            padding: 0; /* Reset padding */
-            border-radius: 0; /* Reset radius */
-            border-right: 1px solid var(--border-color); /* Add a separator line */
-            box-sizing: border-box;
-
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 4px;
+            overflow: hidden; /* Hide content when row is tiny */
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-
-        /* New rule to position the time text itself */
-        .grid-slot-time > .content-normal {
-            position: absolute;
-            top: 0;
-            right: 5px; /* Padding from the right line */
-            transform: translateY(-50%); /* The magic trick: shift up by half its height */
-            background: var(--bg-color); /* Give it a small background to hide the grid line behind it */
-            padding: 0 3px; /* Prevent text from touching the edges of its own background */
-        }
-        /* --- MODIFICATION END --- */
 
         /* Day Column Containers (hold activities) */
         .day-column-container {
@@ -434,29 +418,19 @@
 
         /* Style the header of the collapsed block (the first time slot cell) */
         .grid-slot-time.is-collapsed-merged {
-             /* --- MODIFICATION: Ensure this state uses flex centering to override the new default --- */
-             display: flex !important;
-             align-items: center !important;
-             justify-content: center !important;
-             position: static !important; /* Reset positioning for flex to work */
-             overflow: hidden !important; /* Re-apply hidden overflow */
-             /* --- */
              background-color: var(--surface-color) !important; /* Lighter background */
              border: 1px dashed var(--border-color) !important; /* Dashed border */
              color: var(--text-color) !important; /* Ensure text is visible */
              font-weight: 500 !important;
+             justify-content: center !important;
              /* Height is controlled by grid-template-rows on the parent */
         }
          .grid-slot-time.is-collapsed-merged:hover {
              background-color: var(--bg-color) !important; /* Darker hover */
          }
 
-        /* --- MODIFICATION: Ensure normal content is reset when collapsed --- */
-        .grid-slot-time.is-collapsed-merged .content-normal { 
-            display: none; 
-            position: static; /* Reset positioning */
-            transform: none; /* Reset transform */
-        }
+        /* Hide normal time, show collapsed time text in the header */
+        .grid-slot-time.is-collapsed-merged .content-normal { display: none; }
         .grid-slot-time.is-collapsed-merged .content-collapsed { display: inline; }
 
         /* Hide activity elements that fall within a collapsed time range */
@@ -583,7 +557,7 @@
 
         /* Ensure all elements are visible during printing, overriding collapse states */
         .is-printing .cell-hidden-by-collapse {
-            display: block !important; /* Re-show time slots */
+            display: flex !important; /* Re-show time slots */
         }
         .is-printing .activity-hidden-by-collapse {
             display: flex !important; /* Re-show activities */
@@ -953,7 +927,8 @@ config:ics_repeat=3m
     </div>
 
 <script>
-    // ... (所有 JavaScript 保持不變) ...
+    // ... (前面的所有不變的函數和 CSS 變數定義) ...
+
     // --- NEW: 專門更新主題圖示的函數 ---
     function updateThemeIcon() {
         const themeIcon = document.getElementById('themeIcon');
@@ -1160,11 +1135,9 @@ config:ics_repeat=3m
 
             for (let slotIdx = 0; slotIdx < numSlots; slotIdx++) {
                 const startTime = `${String(Math.floor(slotIdx / 2)).padStart(2, '0')}:${String((slotIdx % 2) * 30).padStart(2, '0')}`;
-                // Only render time for full hours
-                const timeText = (slotIdx % 2 === 0) ? startTime : '';
                 html += `
                     <div class="grid-cell grid-slot-time" data-slot-index="${slotIdx}" style="grid-row: ${slotIdx + 2};">
-                       <span class="content-normal">${timeText}</span>
+                       <span class="content-normal">${startTime}</span>
                        <span class="content-collapsed"></span>
                     </div>
                 `;
@@ -1220,8 +1193,8 @@ config:ics_repeat=3m
 
             timeSlots.forEach(slot => {
                 slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse");
-                slot.style.display = 'block'; // Changed from flex
-                slot.querySelector('.content-normal').style.display = 'block';
+                slot.style.display = 'flex';
+                slot.querySelector('.content-normal').style.display = 'flex';
                 slot.querySelector('.content-collapsed').style.display = 'none';
                 slot.querySelector('.content-collapsed').textContent = '';
                 delete slot.dataset.groupStart;
@@ -1365,7 +1338,7 @@ config:ics_repeat=3m
                  el.classList.remove("is-collapsed-merged", "cell-hidden-by-collapse", "activity-hidden-by-collapse");
                  el.style.display = ''; // Reset display style
                  if(el.querySelector('.content-normal')) {
-                     el.querySelector('.content-normal').style.display = 'block'; // Show normal time
+                     el.querySelector('.content-normal').style.display = 'flex'; // Show normal time
                      el.querySelector('.content-collapsed').style.display = 'none'; // Hide collapsed time
                  }
             });
