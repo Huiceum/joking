@@ -77,7 +77,7 @@
             --overlap-color-2: #5e35b1; /* Deep Purple */
             --overlap-color-3: #e53935; /* Red */
             --overlap-color-4: #43a047; /* Green */
-            --overlap-color-5: #fb8c00; /* Orange */
+            --overlap-color-5: #fb8c00; /* Amber */
             --overlap-color-6: #00acc1; /* Cyan */
 
              /* Row Heights */
@@ -340,9 +340,11 @@
             z-index: 2; /* Above day containers */
             font-size: 11px;
             display: flex;
-            align-items: center;
+            /* --- MODIFIED: Adjust vertical alignment to top and add padding --- */
+            align-items: flex-start; /* Align content to the top */
             justify-content: center;
-            padding: 4px;
+            padding: 4px; /* Keep horizontal padding, add vertical */
+            /* --- END MODIFIED --- */
             border-radius: 4px;
             overflow: hidden; /* Hide content when row is tiny */
             transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -425,6 +427,10 @@
              color: var(--text-color) !important; /* Ensure text is visible */
              font-weight: 500 !important;
              justify-content: center !important;
+             /* --- MODIFIED: Center vertically again for the merged label --- */
+             align-items: center !important; 
+             padding: 4px !important; /* Restore padding */
+             /* --- END MODIFIED --- */
              /* Height is controlled by grid-template-rows on the parent */
         }
          .grid-slot-time.is-collapsed-merged:hover {
