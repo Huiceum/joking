@@ -328,26 +328,45 @@
         .grid-time-header { grid-column: 1; left: 0; z-index: 4; } /* Corner cell */
         .grid-header { /* grid-column set by JS */ text-align: center; }
 
-        /* Time Column Cells */
-        /* Time Column Cells */
-        .grid-slot-time {
-            grid-column: 1;
-            /* grid-row set by JS */
-            color: var(--text-muted-color);
-            font-weight: 500;
-            background-color: var(--bg-color);
-            position: sticky;
-            left: 0;
-            z-index: 2; /* Above day containers */
-            font-size: 11px;
-            display: flex;
-            align-items: flex-start;  /* 【修改】讓內容從頂部開始對齊 */
-            justify-content: center;
-            padding: 4px; /* 原有的 padding 會在頂部留出 4px 的空間，效果不錯 */
-            border-radius: 4px;
-            overflow: hidden; /* Hide content when row is tiny */
-            transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
+/* Time Column Cells - "On the Line" Style */
+.grid-slot-time {
+    grid-column: 1;
+    /* grid-row set by JS */
+    position: sticky; /* 保持 sticky 特性 */
+    left: 0;
+    z-index: 2; /* 確保在日活動之上 */
+    overflow: visible !important; /* 【重要】允許內容超出格子邊界 */
+    border: none; /* 我們不再需要格子的邊框 */
+}
+
+/* 這是針對時間文字 span 的新規則 */
+.grid-slot-time .content-normal {
+    /* 核心定位技巧 */
+    position: relative; /* 相對其父容器 .grid-slot-time 定位 */
+    top: 0;
+    transform: translateY(-50%); /* 向上移動自身高度的 50%，使其中心點對齊頂部邊線 */
+    
+    /* 外觀樣式 */
+    display: inline-block;
+    color: var(--text-muted-color);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 0 8px; /* 左右留白，避免文字緊貼 */
+    background-color: var(--bg-color); /* 【重要】給文字一個背景色，覆蓋下方可能存在的格線 */
+    
+    /* 篩選顯示，只顯示整點時間以保持簡潔 */
+    visibility: hidden; /* 預設隱藏所有時間 */
+}
+
+/* 【新增】一個新規則，只讓整點的時間顯示出來 */
+.grid-slot-time:nth-child(2n + 1) .content-normal {
+    visibility: visible; /* 只顯示奇數行（00:00, 01:00, 02:00...）的時間 */
+}
+
+/* 【新增】確保 00:00 顯示 */
+.grid-slot-time[data-slot-index="0"] .content-normal {
+    visibility: visible;
+}
 
         /* Day Column Containers (hold activities) */
         .day-column-container {
@@ -420,15 +439,15 @@
         }
 
         /* Style the header of the collapsed block (the first time slot cell) */
-        /* Style the header of the collapsed block (the first time slot cell) */
         .grid-slot-time.is-collapsed-merged {
-            background-color: var(--surface-color) !important; /* Lighter background */
-            border: 1px dashed var(--border-color) !important; /* Dashed border */
-            color: var(--text-color) !important; /* Ensure text is visible */
+            background-color: var(--surface-color) !important;
+            border: 1px dashed var(--border-color) !important;
+            color: var(--text-color) !important;
             font-weight: 500 !important;
-            justify-content: center !important;
-            /* 【新增】讓合併後區塊的文字恢復垂直置中，視覺上更平衡 */
+            /* 【新增】因為父容器不再是 flexbox，我們需要自己變成 flexbox 來置中內容 */
+            display: flex !important;
             align-items: center !important;
+            justify-content: center !important;
             /* Height is controlled by grid-template-rows on the parent */
         }
          .grid-slot-time.is-collapsed-merged:hover {
