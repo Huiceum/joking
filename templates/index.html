@@ -310,7 +310,7 @@
             min-width: 1100px;
             box-sizing: border-box;
             font-size: 0.8em;
-            position: relative; /* Needed for sticky headers */
+            position: relative; /* Needed for sticky headers and time indicator */
             overflow: hidden; /* Hide content that might stick out if rows are tiny */
             transition: grid-template-rows 0.3s ease; /* Animate row height changes */
         }
@@ -328,72 +328,25 @@
         .grid-time-header { grid-column: 1; left: 0; z-index: 4; } /* Corner cell */
         .grid-header { /* grid-column set by JS */ text-align: center; }
 
-
-
-/* ================================================= */
-/* === NEW "ON THE LINE" TIME COLUMN STYLESHEET === */
-/* ================================================= */
-
-/* 1. The Time Slot Container: Now just an anchor */
-.grid-slot-time {
-    grid-column: 1;
-    position: sticky;
-    left: 0;
-    z-index: 2;
-    overflow: visible !important; /* Allow content to go outside */
-    /* Add a border to create the horizontal lines across the time column */
-    border-top: 1px solid var(--border-color); 
-}
-
-/* 2. The Time Text Itself: The magic happens here */
-.grid-slot-time .content-normal {
-    /* --- Positioning --- */
-    position: absolute; /* Detach from the normal flow */
-    top: 0; /* Align to the top of the container */
-    right: 5px; /* Align to the right edge with a small gap */
-    transform: translateY(-95%); /* 【核心】拉上去，讓文字底部幾乎貼在線上 */
-
-    /* --- Aesthetics --- */
-    display: inline-block;
-    color: var(--text-muted-color);
-    font-size: 10px; /* Slightly smaller for a cleaner look */
-    font-weight: 400; /* Lighter font weight */
-    padding: 1px 4px; /* Minimal padding */
-    background-color: var(--bg-color); /* Cover the grid line behind the text */
-    border-radius: 3px;
-    
-    /* --- Visibility --- */
-    visibility: hidden; /* Hide all by default */
-}
-
-/* 3. Selectively show only the hours */
-.grid-slot-time:nth-child(2n + 1) .content-normal {
-    visibility: visible; /* Show 00:00, 01:00, 02:00 etc. */
-}
-/* Ensure the very first time slot (00:00) is always visible */
-.grid-slot-time[data-slot-index="0"] .content-normal {
-    visibility: visible;
-}
-
-/* --- And also apply the horizontal lines to the day columns --- */
-.day-column-container {
-    /* ... (保留所有舊的樣式) ... */
-    
-    /* 【新增】加上這兩行，讓水平線延伸到整個表格 */
-    border-top: 1px solid var(--border-color);
-    background-color: transparent; /* 讓下方的 schedule-grid 背景色透出來 */
-}
-
-/* 確保合併區塊的樣式依然正確 */
-.grid-slot-time.is-collapsed-merged {
-     background-color: var(--surface-color) !important;
-     border: 1px dashed var(--border-color) !important;
-     color: var(--text-color) !important;
-     font-weight: 500 !important;
-     display: flex !important;
-     align-items: center !important;
-     justify-content: center !important;
-}
+        /* Time Column Cells */
+        .grid-slot-time {
+            grid-column: 1;
+            /* grid-row set by JS */
+            color: var(--text-muted-color);
+            font-weight: 500;
+            background-color: var(--bg-color);
+            position: sticky;
+            left: 0;
+            z-index: 2; /* Above day containers */
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 4px;
+            overflow: hidden; /* Hide content when row is tiny */
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
 
         /* Day Column Containers (hold activities) */
         .day-column-container {
@@ -467,15 +420,12 @@
 
         /* Style the header of the collapsed block (the first time slot cell) */
         .grid-slot-time.is-collapsed-merged {
-            background-color: var(--surface-color) !important;
-            border: 1px dashed var(--border-color) !important;
-            color: var(--text-color) !important;
-            font-weight: 500 !important;
-            /* 【新增】因為父容器不再是 flexbox，我們需要自己變成 flexbox 來置中內容 */
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            /* Height is controlled by grid-template-rows on the parent */
+             background-color: var(--surface-color) !important; /* Lighter background */
+             border: 1px dashed var(--border-color) !important; /* Dashed border */
+             color: var(--text-color) !important; /* Ensure text is visible */
+             font-weight: 500 !important;
+             justify-content: center !important;
+             /* Height is controlled by grid-template-rows on the parent */
         }
          .grid-slot-time.is-collapsed-merged:hover {
              background-color: var(--bg-color) !important; /* Darker hover */
@@ -560,6 +510,40 @@
              .day-hidden { display: grid !important; } /* Ensure day columns are visible */
         }
 
+        /* --- NEW: Current Time Indicator --- */
+        #currentTimeIndicator {
+            position: absolute;
+            display: none; /* 預設隱藏，由 JS 控制顯示 */
+            left: 100px; /* 預設為桌面版的 time column 寬度 */
+            right: 0;
+            height: 2px;
+            background-color: #f85149; /* 使用一個明顯的紅色，與錯誤提示同色 */
+            z-index: 5; /* 確保在活動之上，但在 tooltip 和 header 之下 */
+            pointer-events: none; /* 讓滑鼠點擊可以穿透這條線 */
+            transition: top 1s linear; /* 讓線的移動看起來平滑 */
+        }
+
+        /* 時間軸上的小圓點 */
+        #currentTimeIndicator::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -5px; /* 讓圓點的中心對齊時間軸的邊緣 */
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            background-color: #f85149;
+            border-radius: 50%;
+        }
+
+        /* 適應手機版視圖 */
+        .schedule-grid.mobile-full-view #currentTimeIndicator {
+            left: 40px; /* 手機整週模式下，時間欄較窄 */
+        }
+        .schedule-grid.mobile-today-view #currentTimeIndicator {
+            left: 60px; /* 手機單日模式下，時間欄的寬度 */
+        }
+
         /* Print Styles */
         .is-printing {
             background-color: #ffffff !important;
@@ -605,7 +589,7 @@
          }
 
 
-        .is-printing .activity-tooltip { display: none !important; } /* Hide tooltips */
+        .is-printing .activity-tooltip, .is-printing #currentTimeIndicator { display: none !important; } /* Hide tooltips and time indicator */
 
         /* Ensure all elements are visible during printing, overriding collapse states */
         .is-printing .cell-hidden-by-collapse {
@@ -1025,6 +1009,7 @@ config:ics_repeat=3m
         let currentViewMode = "today"; // "today", "full-mobile", "full-desktop"
         const dayNames = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
         let processedScheduleData = null; // 全局變數，用於儲存後端處理過的課表資料
+        let timeIntervalId = null; // <<< NEW: 用於儲存時間線的計時器
 
         let normalRowHeight = 25;
         let collapsedBlockHeight = 50;
@@ -1163,6 +1148,9 @@ config:ics_repeat=3m
             
             // Always update view if processed data exists
             if (processedScheduleData) updateTableView();
+            
+            // <<< NEW: Update time indicator on view change
+            updateCurrentTimeIndicator();
         }
 
 
@@ -1180,6 +1168,9 @@ config:ics_repeat=3m
             const numSlots = 48;
 
             let html = '<div class="schedule-grid">';
+            // <<< NEW: Add the time indicator element
+            html += '<div id="currentTimeIndicator"></div>'; 
+            
             html += '<div class="grid-cell grid-time-header"></div>';
             for (let i = 0; i < 7; i++) {
                 html += `<div class="grid-cell grid-header" data-day-index="${i}" style="grid-column: ${i + 2};">${weekDays[i]}</div>`;
@@ -1228,6 +1219,41 @@ config:ics_repeat=3m
             });
 
             scheduleDataContainer.innerHTML = tempDiv.innerHTML;
+        }
+
+        // <<< NEW: Function to update the current time indicator's position
+        function updateCurrentTimeIndicator() {
+            const indicator = document.getElementById('currentTimeIndicator');
+            const grid = document.querySelector('.schedule-grid');
+            if (!indicator || !grid) return; // Exit if elements aren't rendered yet
+
+            const now = new Date();
+            const todayIndex = (now.getDay() === 0) ? 6 : now.getDay() - 1; // Monday is 0
+
+            // In mobile "today" view, hide the indicator if not viewing today's schedule
+            if (grid.classList.contains('mobile-today-view') && currentDayIndex !== todayIndex) {
+                indicator.style.display = 'none';
+                return;
+            }
+
+            // Otherwise, ensure it's visible
+            indicator.style.display = 'block';
+
+            // Calculate minutes from midnight
+            const minutesFromMidnight = now.getHours() * 60 + now.getMinutes();
+            const totalMinutesInDay = 24 * 60;
+
+            // Get the height of the grid's header row
+            const header = grid.querySelector('.grid-header');
+            const headerHeight = header ? header.offsetHeight : 0;
+
+            // Get the total height of the grid body (all time slots)
+            const gridBodyHeight = grid.offsetHeight - headerHeight;
+
+            // Calculate the top position
+            const topPosition = (minutesFromMidnight / totalMinutesInDay) * gridBodyHeight + headerHeight;
+
+            indicator.style.top = `${topPosition}px`;
         }
 
         function updateTableView() {
@@ -1361,6 +1387,9 @@ config:ics_repeat=3m
             document.getElementById("currentDayDisplay").textContent = dayNames[currentDayIndex];
             document.getElementById("prevDay").disabled = (currentDayIndex === 0 && currentViewMode === "today");
             document.getElementById("nextDay").disabled = (currentDayIndex === 6 && currentViewMode === "today");
+            
+            // <<< NEW: Update time indicator on view change
+            updateCurrentTimeIndicator();
         }
 
 
@@ -1613,6 +1642,15 @@ config:ics_repeat=3m
                         document.getElementById("scheduleContent").classList.add("visible");
                         document.getElementById("exportContainer").style.display = "flex";
                         setupMobileView();
+                        
+                        // <<< NEW: Start the time indicator
+                        if (timeIntervalId) {
+                            clearInterval(timeIntervalId); // Clear any existing timer
+                        }
+                        updateCurrentTimeIndicator(); // Update position immediately
+                        // Set a new timer to update every minute
+                        timeIntervalId = setInterval(updateCurrentTimeIndicator, 60000); 
+
                     } else {
                         messageDiv.innerHTML = `<div class="error">生成失敗: ${result.message}</div>`;
                         // On failure, save the input text but clear the processed data state
