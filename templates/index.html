@@ -328,44 +328,71 @@
         .grid-time-header { grid-column: 1; left: 0; z-index: 4; } /* Corner cell */
         .grid-header { /* grid-column set by JS */ text-align: center; }
 
-/* Time Column Cells - "On the Line" Style */
+
+
+/* ================================================= */
+/* === NEW "ON THE LINE" TIME COLUMN STYLESHEET === */
+/* ================================================= */
+
+/* 1. The Time Slot Container: Now just an anchor */
 .grid-slot-time {
     grid-column: 1;
-    /* grid-row set by JS */
-    position: sticky; /* 保持 sticky 特性 */
+    position: sticky;
     left: 0;
-    z-index: 2; /* 確保在日活動之上 */
-    overflow: visible !important; /* 【重要】允許內容超出格子邊界 */
-    border: none; /* 我們不再需要格子的邊框 */
+    z-index: 2;
+    overflow: visible !important; /* Allow content to go outside */
+    /* Add a border to create the horizontal lines across the time column */
+    border-top: 1px solid var(--border-color); 
 }
 
-/* 這是針對時間文字 span 的新規則 */
+/* 2. The Time Text Itself: The magic happens here */
 .grid-slot-time .content-normal {
-    /* 核心定位技巧 */
-    position: relative; /* 相對其父容器 .grid-slot-time 定位 */
-    top: 0;
-    transform: translateY(-50%); /* 向上移動自身高度的 50%，使其中心點對齊頂部邊線 */
-    
-    /* 外觀樣式 */
+    /* --- Positioning --- */
+    position: absolute; /* Detach from the normal flow */
+    top: 0; /* Align to the top of the container */
+    right: 5px; /* Align to the right edge with a small gap */
+    transform: translateY(-95%); /* 【核心】拉上去，讓文字底部幾乎貼在線上 */
+
+    /* --- Aesthetics --- */
     display: inline-block;
     color: var(--text-muted-color);
-    font-size: 11px;
-    font-weight: 500;
-    padding: 0 8px; /* 左右留白，避免文字緊貼 */
-    background-color: var(--bg-color); /* 【重要】給文字一個背景色，覆蓋下方可能存在的格線 */
+    font-size: 10px; /* Slightly smaller for a cleaner look */
+    font-weight: 400; /* Lighter font weight */
+    padding: 1px 4px; /* Minimal padding */
+    background-color: var(--bg-color); /* Cover the grid line behind the text */
+    border-radius: 3px;
     
-    /* 篩選顯示，只顯示整點時間以保持簡潔 */
-    visibility: hidden; /* 預設隱藏所有時間 */
+    /* --- Visibility --- */
+    visibility: hidden; /* Hide all by default */
 }
 
-/* 【新增】一個新規則，只讓整點的時間顯示出來 */
+/* 3. Selectively show only the hours */
 .grid-slot-time:nth-child(2n + 1) .content-normal {
-    visibility: visible; /* 只顯示奇數行（00:00, 01:00, 02:00...）的時間 */
+    visibility: visible; /* Show 00:00, 01:00, 02:00 etc. */
 }
-
-/* 【新增】確保 00:00 顯示 */
+/* Ensure the very first time slot (00:00) is always visible */
 .grid-slot-time[data-slot-index="0"] .content-normal {
     visibility: visible;
+}
+
+/* --- And also apply the horizontal lines to the day columns --- */
+.day-column-container {
+    /* ... (保留所有舊的樣式) ... */
+    
+    /* 【新增】加上這兩行，讓水平線延伸到整個表格 */
+    border-top: 1px solid var(--border-color);
+    background-color: transparent; /* 讓下方的 schedule-grid 背景色透出來 */
+}
+
+/* 確保合併區塊的樣式依然正確 */
+.grid-slot-time.is-collapsed-merged {
+     background-color: var(--surface-color) !important;
+     border: 1px dashed var(--border-color) !important;
+     color: var(--text-color) !important;
+     font-weight: 500 !important;
+     display: flex !important;
+     align-items: center !important;
+     justify-content: center !important;
 }
 
         /* Day Column Containers (hold activities) */
