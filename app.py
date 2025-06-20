@@ -88,6 +88,22 @@ if GEMINI_API_KEY:
 
 # --- 核心業務邏輯函數 ---
 
+def round_time_to_slot(h, m):
+    """將小時和分鐘四捨五入到最近的半小時，並返回對應的 slot 索引。"""
+    if m < 15:
+        # 0-14 分鐘 -> 向下貼合到 :00
+        new_h, new_m = h, 0
+    elif m < 45:
+        # 15-44 分鐘 -> 貼合到 :30
+        new_h, new_m = h, 30
+    else:
+        # 45-59 分鐘 -> 向上貼合到下個小時的 :00
+        new_h, new_m = h + 1, 0
+    
+    # 處理進位到隔天的情況 (例如 23:50 -> 24:00)
+    # 這裡的 slot 計算會自然處理，例如 24 * 2 = slot 48
+    return new_h * 2 + (new_m // 30)
+
 def parse_schedule_input(input_text):
     """解析週習表輸入語法"""
     activities = []
@@ -132,18 +148,26 @@ def parse_schedule_input(input_text):
         start_h, start_m = map(int, start_time_str.split(':'))
         end_h, end_m = map(int, end_time_str.split(':'))
 
-        if start_m not in [0, 30] or end_m not in [0, 30]:
-            raise ValueError(f"時間必須是整點或半點 (00 或 30)，錯誤於：'{line}'")
+        # --- MODIFICATION START ---
+        # 移除舊的驗證，不再要求時間必須是 00 或 30
+        # if start_m not in [0, 30] or end_m not in [0, 30]:
+        #     raise ValueError(f"時間必須是整點或半點 (00 或 30)，錯誤於：'{line}'")
 
-        start_slot = start_h * 2 + (start_m // 30)
-        end_slot = end_h * 2 + (end_m // 30)
+        # 使用新的輔助函數來計算貼合後的 slot
+        start_slot = round_time_to_slot(start_h, start_m)
+        end_slot = round_time_to_slot(end_h, end_m)
 
         if is_next_day:
-            end_slot += 48 # Activities crossing midnight will have end_slot > 47
+            # 如果使用者明確指定 "次日"，則將結束 slot 增加一整天 (48 slots)
+            end_slot += 48
 
+        # 修改後的健全性檢查：
+        # 如果處理後，開始時間仍然大於或等於結束時間（且不是跨天情況），則拋出錯誤。
+        # 這可以捕捉到 "14:00 - 13:00" 或 "14:10 - 14:05" 這類邏輯錯誤。
         if start_slot >= end_slot:
-            raise ValueError(f"結束時間必須晚於開始時間，錯誤於：'{line}'")
-
+            raise ValueError(f"處理後結束時間必須晚於開始時間，請檢查時間範圍。錯誤於：'{line}'")
+        # --- MODIFICATION END ---
+            
         activities.append({
             'day': day_index,
             'start_slot': start_slot,

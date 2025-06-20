@@ -77,7 +77,7 @@
             --overlap-color-2: #5e35b1; /* Deep Purple */
             --overlap-color-3: #e53935; /* Red */
             --overlap-color-4: #43a047; /* Green */
-            --overlap-color-5: #fb8c00; /* Amber */
+            --overlap-color-5: #fb8c00; /* Orange */
             --overlap-color-6: #00acc1; /* Cyan */
 
              /* Row Heights */
@@ -340,11 +340,9 @@
             z-index: 2; /* Above day containers */
             font-size: 11px;
             display: flex;
-            /* --- MODIFIED: Adjust vertical alignment to top and add padding --- */
-            align-items: flex-start; /* Align content to the top */
+            align-items: center;
             justify-content: center;
-            padding: 4px; /* Keep horizontal padding, add vertical */
-            /* --- END MODIFIED --- */
+            padding: 4px;
             border-radius: 4px;
             overflow: hidden; /* Hide content when row is tiny */
             transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -427,10 +425,6 @@
              color: var(--text-color) !important; /* Ensure text is visible */
              font-weight: 500 !important;
              justify-content: center !important;
-             /* --- MODIFIED: Center vertically again for the merged label --- */
-             align-items: center !important; 
-             padding: 4px !important; /* Restore padding */
-             /* --- END MODIFIED --- */
              /* Height is controlled by grid-template-rows on the parent */
         }
          .grid-slot-time.is-collapsed-merged:hover {
@@ -870,35 +864,37 @@ height: 100%;
     <div class="content-wrapper">
         <h2 id="mainTitle">調味乳 weekly routine</h2>
         
-        <div class="input-section">
-            <form id="scheduleForm">
-                <div class="form-group">
-                    <label for="scheduleInput">請輸入您的週習表描述:</label>
-                    <textarea id="scheduleInput" name="scheduleInput" placeholder="範例：
+<div class="input-section">
+    <form id="scheduleForm">
+        <div class="form-group">
+            <label for="scheduleInput">請輸入您的週習表描述:</label>
+            <!-- MODIFIED: 更新 placeholder 的範例 -->
+            <textarea id="scheduleInput" name="scheduleInput" placeholder="範例：
 config:ics_repeat=3m
 
-週一 08:00-10:30 晨間運動 [記得帶水和毛巾]
+週一 08:15-10:47 晨間運動 [記得帶水和毛巾]
 週一 09:00-11:00 專案開發 [完成登入模塊]
 二 9:00-12:00 辦公室工作
 三 14:00-15:00 團隊會議 [準備進度報告]
 三 14:30-16:00 客戶拜訪 [重疊會議]
 五 23:00-次日 01:00 看電影 [放鬆一下]"></textarea>
-                    <div class="syntax-help">
-                        <h4>語法說明：</h4>
-                        <ul>
-                            <li><b>活動格式:</b> <code>[星期] [開始時間]-[結束時間] [活動名稱] [[備註]]</code></li>
-                            <li><b>星期:</b> <code>週一</code>, <code>週二</code>... 或 <code>一</code>, <code>二</code>...<code>日</code></li>
-                            <li><b>時間:</b> 24小時制，例如 <code>09:00</code>, <code>14:30</code></li>
-                            <li><b>跨天:</b> <code>週一 23:00-次日 01:30 夜間學習</code></li>
-                            <li><b>備註:</b> 在行末使用方括號 <code>[這是我的備註]</code></li>
-                            <li><b>重疊活動:</b> 系統會自動將重疊的活動拆分到不同欄位中並用不同顏色區分</li>
-                            <li><b>全局設定:</b> <code>config:ics_repeat=3m</code> (設定日曆匯出重複3個月，預設6個月)</li>
-                        </ul>
-                    </div>
-                </div>
-                <button type="submit" id="generateBtn">生成週習表</button>
-            </form>
+            <div class="syntax-help">
+                <h4>語法說明：</h4>
+                <ul>
+                    <li><b>活動格式:</b> <code>[星期] [開始時間]-[結束時間] [活動名稱] [[備註]]</code></li>
+                    <li><b>星期:</b> <code>週一</code>, <code>週二</code>... 或 <code>一</code>, <code>二</code>...<code>日</code></li>
+                    <!-- MODIFIED: 更新時間說明的文字 -->
+                    <li><b>時間:</b> 24小時制，例如 <code>09:00</code>, <code>14:37</code>。系統會自動將時間貼合至最近的半小時。</li>
+                    <li><b>跨天:</b> <code>週一 23:00-次日 01:30 夜間學習</code></li>
+                    <li><b>備註:</b> 在行末使用方括號 <code>[這是我的備註]</code></li>
+                    <li><b>重疊活動:</b> 系統會自動將重疊的活動拆分到不同欄位中並用不同顏色區分</li>
+                    <li><b>全局設定:</b> <code>config:ics_repeat=3m</code> (設定日曆匯出重複3個月，預設6個月)</li>
+                </ul>
+            </div>
         </div>
+        <button type="submit" id="generateBtn">生成週習表</button>
+    </form>
+</div>
         
         <div id="message"></div>
         
