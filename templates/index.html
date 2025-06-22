@@ -48,8 +48,6 @@
             /* Row Heights */
             --normal-row-height: 25px;
             --collapsed-block-height: 50px;
-            /* --- MODIFIED: 調整時間標籤的向上偏移值 --- */
-            --time-label-offset: -12px; /* 預設向上偏移 12px，讓它出現在格子上方 */
         }
 
         /* Light Theme */
@@ -85,8 +83,6 @@
              /* Row Heights */
             --normal-row-height: 25px;
             --collapsed-block-height: 50px;
-             /* --- MODIFIED: 調整時間標籤的向上偏移值 --- */
-            --time-label-offset: -12px; /* 預設向上偏移 12px，讓它出現在格子上方 */
         }
 
                 /* --- 新增：右上角控制項容器 --- */
@@ -174,7 +170,7 @@
             /* 移除 position, top, right, background-color, padding, gap, font-size */
             border-radius: 8px; /* 方形圓角 */
             height: 40px;
-            padding: 0 15px; /* 左右留白 */
+            width: 40px;
             font-size: 14px;
             color: var(--text-color);
             user-select: none;
@@ -337,7 +333,7 @@
             color: var(--text-muted-color);
             font-weight: 500;
             background-color: var(--bg-color);
-            position: relative; /* --- MODIFIED: 設為 relative 以便內部時間標籤絕對定位 --- */
+            position: sticky;
             left: 0;
             z-index: 2; /* Above day containers */
             font-size: 11px;
@@ -349,23 +345,6 @@
             overflow: hidden; /* Hide content when row is tiny */
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-
-        /* --- MODIFIED: 新增時間標籤的樣式 --- */
-        .grid-slot-time .time-label {
-            position: absolute;
-            top: var(--time-label-offset); /* 使用變數控制向上偏移 */
-            left: 50%; /* 水平居中 */
-            transform: translateX(-50%); /* 精確水平居中 */
-            background-color: var(--bg-color); /* 與格子背景色一致，或可以設為透明 */
-            padding: 0 4px; /* 少量內邊距，避免緊貼邊緣 */
-            border-radius: 3px;
-            z-index: 5; /* 確保在所有格子上方 */
-            white-space: nowrap; /* 防止時間標籤換行 */
-            pointer-events: none; /* 防止遮擋滑鼠事件 */
-            color: var(--text-muted-color); /* 保持與原本時間欄位一致的顏色 */
-        }
-        /* --- END MODIFIED --- */
-
 
         /* Day Column Containers (hold activities) */
         .day-column-container {
@@ -546,20 +525,6 @@
             color: #000000 !important;
             position: static !important; /* Remove sticky */
         }
-        /* --- MODIFIED: 列印時確保時間標籤也顯示且樣式正確 --- */
-        .is-printing .grid-slot-time .time-label {
-            position: static !important; /* 移除絕對定位 */
-            top: auto !important;
-            left: auto !important;
-            transform: none !important;
-            display: block !important; /* 確保顯示 */
-            color: #000000 !important; /* 列印時顯示黑色 */
-            padding: 2px 4px !important; /* 調整 padding */
-            background-color: #f2f2f2 !important; /* 與 header 背景一致 */
-            margin-bottom: 2px; /* 稍微增加與下方內容的間距 */
-        }
-        /* --- END MODIFIED --- */
-
         .is-printing .day-column-container {
              background-color: #ffffff !important; /* White background for day columns */
              border-color: #ddd !important;
@@ -705,8 +670,8 @@
         .chat-window {
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+width: 100%;
+height: 100%;
             border-radius: 0;
             transform: translateY(100%);
         }
@@ -846,12 +811,12 @@
     <!-- NEW: 統一的右上角控制項容器 -->
     <div class="top-right-controls">
         <!-- User Profile (如果已登入) -->
-        {% if session.user %}
-        <div id="userInfo" class="glass-ui-element" data-email="{{ session.user.email }}">
+        {% if session %}
+        <div id="userInfo" class="glass-ui-element" data-email="{{ session.email }}">
             <!-- --- NEW: 添加顯示用戶姓名的 span --- -->
-            <span class="username">{{ session.user.name }}</span>
+            <span class="username">{{ session.name }}</span>
             <!-- --- NEW: 添加顯示用戶 email 的 span --- -->
-            <span class="user-email">{{ session.user.email }}</span>
+            <span class="user-email">{{ session.email }}</span>
             <!-- --- MODIFIED: 為登出按鈕添加 id --- -->
             <a href="{{ url_for('logout') }}" id="logoutBtn" class="logout-btn">登出</a>
         </div>
@@ -942,7 +907,7 @@ config:ics_repeat=3m
             </div>
             <div id="scheduleData"></div>
             <div class="export-buttons" id="exportContainer">
-                <!-- --- MODIFIED: 導出 PNG 按鈕，使用 7.png --- -->
+                <!-- --- MODIFIED: 導出 PNG 按鈕，使用 6.png --- -->
                 <button class="export-button" id="exportPngBtn">
                     <img class="export-icon" src="{{ url_for('static', filename='icon/7.png') }}" alt="Export PNG">
                     <span>導出為 PNG</span> <!-- Wrap text in span -->
@@ -952,7 +917,7 @@ config:ics_repeat=3m
                     <img class="export-icon" src="{{ url_for('static', filename='icon/5.png') }}" alt="Export PDF">
                     <span>導出為 PDF</span> <!-- Wrap text in span -->
                 </button>
-                <!-- --- MODIFIED: 導出 ICS 按鈕，使用 6.png --- -->
+                <!-- --- MODIFIED: 導出 ICS 按鈕，使用 7.png --- -->
                 <button class="export-button" id="exportIcsBtn">
                     <img class="export-icon" src="{{ url_for('static', filename='icon/6.png') }}" alt="Export ICS">
                     <span>添加到日曆 (.ics)</span> <!-- Wrap text in span -->
@@ -961,595 +926,952 @@ config:ics_repeat=3m
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const themeToggle = document.getElementById('themeToggle');
-            const themeIcon = document.getElementById('themeIcon');
-            const scheduleForm = document.getElementById('scheduleForm');
-            const scheduleInput = document.getElementById('scheduleInput');
-            const messageDiv = document.getElementById('message');
-            const scheduleContentDiv = document.getElementById('scheduleContent');
-            const scheduleDataDiv = document.getElementById('scheduleData');
-            const exportPngBtn = document.getElementById('exportPngBtn');
-            const exportPdfBtn = document.getElementById('exportPdfBtn');
-            const exportIcsBtn = document.getElementById('exportIcsBtn');
-            const aiChatBtn = document.getElementById('aiChatBtn');
-            const chatModal = document.getElementById('chatModal');
-            const closeChatBtn = document.getElementById('closeChatBtn');
-            const chatMessagesDiv = document.getElementById('chatMessages');
-            const chatInput = document.getElementById('chatInput');
-            const chatForm = document.getElementById('chatForm');
+<script>
+    // ... (前面的所有不變的函數和 CSS 變數定義) ...
 
-            let currentScheduleData = null;
-            let currentView = 'week'; // 'week' or 'day'
-            let currentDayIndex = new Date().getDay(); // 0 for Sunday, 1 for Monday...
+    // --- NEW: 專門更新主題圖示的函數 ---
+    function updateThemeIcon() {
+        const themeIcon = document.getElementById('themeIcon');
+        if (!themeIcon) return; // 如果元素不存在則返回
 
-            const dayNames = ["日", "一", "二", "三", "四", "五", "六"];
-            const dayNameToNumber = { "日": 0, "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6 };
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'light') {
+            // 在淺色模式下，顯示切換到深色的圖示 (4.png)
+            themeIcon.src = "{{ url_for('static', filename='icon/4.png') }}";
+            themeIcon.alt = "Switch to Dark Mode";
+        } else {
+            // 在深色模式下，顯示切換到淺色的圖示 (3.png)
+            themeIcon.src = "{{ url_for('static', filename='icon/3.png') }}";
+            themeIcon.alt = "Switch to Light Mode";
+        }
+    }
 
-            // --- Theme Toggle Logic ---
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            updateThemeIcon(savedTheme);
+    // --- MODIFIED: 修改 toggleTheme 和 loadTheme ---
+    function toggleTheme() {
+        const newTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        updateThemeIcon(); // 呼叫新函數來更新圖示
+        
+        window.dispatchEvent(new Event('themeChanged'));
+    }
 
-            themeToggle.addEventListener('click', () => {
-                const newTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('theme', newTheme);
-                document.documentElement.setAttribute('data-theme', newTheme);
-                updateThemeIcon(newTheme);
-            });
+    function loadTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        // 不再需要更新文字，圖示的更新將在 DOMContentLoaded 中完成
+    }
 
-            function updateThemeIcon(theme) {
-                themeIcon.src = theme === 'dark' ? '{{ url_for("static", filename="icon/10.png") }}' : '{{ url_for("static", filename="icon/10.png") }}'; // Moon / Sun icons
-                // themeIcon.alt = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    // 頁面加載時立即加載主題，避免閃爍
+    loadTheme();
+
+    // 當 DOM 完全加載後，再執行與 DOM 元素相關的操作
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- 變數定義 ---
+        let currentDayIndex = 0;
+        let currentViewMode = "today"; // "today", "full-mobile", "full-desktop"
+        const dayNames = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+        let processedScheduleData = null; // 全局變數，用於儲存後端處理過的課表資料
+
+        let normalRowHeight = 25;
+        let collapsedBlockHeight = 50;
+        
+        let chatHistory = []; // 用來保存對話歷史
+
+        // --- DOM 元素獲取 ---
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const scheduleDataContainer = document.getElementById('scheduleData');
+        const scheduleForm = document.getElementById("scheduleForm");
+        const tooltip = document.getElementById('activity-tooltip');
+        const aiChatBtn = document.getElementById('aiChatBtn');
+        const chatModal = document.getElementById('chatModal');
+        const closeChatBtn = document.getElementById('closeChatBtn');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+        const scheduleTextarea = document.getElementById('scheduleInput');
+        const generateBtn = document.getElementById("generateBtn"); // 獲取生成按鈕
+        const messageDiv = document.getElementById("message"); // 獲取消息區域
+        const logoutBtn = document.getElementById('logoutBtn'); // 獲取登出按鈕
+
+        // const isLoggedIn = document.getElementById('userInfo') !== null; // 不再使用這個簡單判斷
+
+        // --- Local Storage Manager ---
+        const storageManager = {
+            STORAGE_KEY_GLOBAL_SCHEDULE: 'weeklyScheduleGlobalSchedule',
+            STORAGE_KEY_USER_CHATS: 'weeklyScheduleUserChats',
+
+            getCurrentUserEmail() {
+                // 從 userInfo 元素的 data-email 屬性獲取當前登入用戶的 email
+                const userInfoDiv = document.getElementById('userInfo');
+                return userInfoDiv ? userInfoDiv.dataset.email : null;
+            },
+
+            // 載入全局課表數據 (文字輸入和處理後的資料)
+            loadGlobalSchedule() {
+                try {
+                    const data = localStorage.getItem(this.STORAGE_KEY_GLOBAL_SCHEDULE);
+                    return data ? JSON.parse(data) : null;
+                } catch (e) {
+                    console.error("Error loading global schedule from localStorage:", e);
+                    return null;
+                }
+            },
+
+            // 儲存全局課表數據
+            saveGlobalSchedule(scheduleInputText, processedScheduleData) {
+                try {
+                    const dataToSave = {
+                        scheduleInput: scheduleInputText,
+                        processedData: processedScheduleData
+                    };
+                    localStorage.setItem(this.STORAGE_KEY_GLOBAL_SCHEDULE, JSON.stringify(dataToSave));
+                    console.log("Global schedule data saved.");
+                } catch (e) {
+                    console.error("Error saving global schedule to localStorage:", e);
+                }
+            },
+
+            // 載入特定使用者的聊天歷史
+            loadUserChatHistory(email) {
+                if (!email) return null;
+                try {
+                    const userChats = localStorage.getItem(this.STORAGE_KEY_USER_CHATS);
+                    const allChats = userChats ? JSON.parse(userChats) : {};
+                    return allChats[email] || null;
+                } catch (e) {
+                    console.error(`Error loading chat history for ${email}:`, e);
+                    return null;
+                }
+            },
+
+            // 儲存特定使用者的聊天歷史
+            saveUserChatHistory(email, chatHistoryArray) {
+                if (!email) return; // 未登入不儲存
+                try {
+                    const userChats = localStorage.getItem(this.STORAGE_KEY_USER_CHATS);
+                    const allChats = userChats ? JSON.parse(userChats) : {};
+                    allChats[email] = chatHistoryArray;
+                    localStorage.setItem(this.STORAGE_KEY_USER_CHATS, JSON.stringify(allChats));
+                    console.log(`Chat history saved for user: ${email}`);
+                } catch (e) {
+                     console.error(`Error saving chat history for ${email}:`, e);
+                }
+            },
+
+            // 清除特定使用者的聊天歷史
+            clearUserChatHistory(email) {
+                 if (!email) return; // 未登入或無email不處理
+                try {
+                     const userChats = localStorage.getItem(this.STORAGE_KEY_USER_CHATS);
+                     const allChats = userChats ? JSON.parse(userChats) : {};
+                     if (allChats[email]) {
+                         delete allChats[email];
+                         localStorage.setItem(this.STORAGE_KEY_USER_CHATS, JSON.stringify(allChats));
+                         console.log(`Chat history cleared for user: ${email}`);
+                     }
+                } catch (e) {
+                     console.error(`Error clearing chat history for ${email}:`, e);
+                }
+            }
+             // Note: We don't need a method to clear *all* localStorage,
+             // only user-specific chat and global schedule separately if needed.
+             // Clearing everything on logout is too aggressive for the schedule data requirement.
+        };
+
+        // --- 函數定義 (您的所有原始函數保持不變，但會被修改以使用 storageManager) ---
+
+        function getCssVariable(name) {
+            const style = getComputedStyle(document.documentElement);
+            return parseFloat(style.getPropertyValue(name).replace('px', ''));
+        }
+
+        function updateCssVariables() {
+            normalRowHeight = getCssVariable('--normal-row-height');
+            collapsedBlockHeight = getCssVariable('--collapsed-block-height');
+        }
+
+        function setupMobileView() {
+            const isMobile = window.innerWidth <= 768;
+            const mobileControls = document.getElementById("mobileControls");
+            if (!document.querySelector(".schedule-grid")) return;
+
+            mobileControls.style.display = isMobile ? "flex" : "none";
+
+            // Only change view mode if currently full-desktop and switching to mobile
+            // Or if currently mobile and switching to desktop
+            if (isMobile && currentViewMode === "full-desktop") {
+                let today = new Date().getDay();
+                currentDayIndex = (today === 0) ? 6 : today - 1;
+                currentViewMode = "today";
+            } else if (!isMobile && (currentViewMode === "today" || currentViewMode === "full-mobile")) {
+                currentViewMode = "full-desktop";
+            }
+            
+            // Always update view if processed data exists
+            if (processedScheduleData) updateTableView();
+        }
+
+
+        function renderScheduleGrid(data) {
+            // 這個函數會修改全局的 processedScheduleData，這對我們的儲存邏輯很重要
+            processedScheduleData = data; 
+            
+            // --- NEW: 在成功生成後，立即儲存全局課表數據 ---
+            storageManager.saveGlobalSchedule(scheduleTextarea.value, processedScheduleData);
+            // --- END NEW ---
+
+            updateCssVariables();
+
+            const weekDays = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+            const numSlots = 48;
+
+            let html = '<div class="schedule-grid">';
+            html += '<div class="grid-cell grid-time-header"></div>';
+            for (let i = 0; i < 7; i++) {
+                html += `<div class="grid-cell grid-header" data-day-index="${i}" style="grid-column: ${i + 2};">${weekDays[i]}</div>`;
             }
 
-            // --- Schedule Generation ---
-            scheduleForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                messageDiv.innerHTML = '<p class="loading">正在生成週習表...</p>';
-                scheduleContentDiv.classList.remove('visible');
+            for (let slotIdx = 0; slotIdx < numSlots; slotIdx++) {
+                const startTime = `${String(Math.floor(slotIdx / 2)).padStart(2, '0')}:${String((slotIdx % 2) * 30).padStart(2, '0')}`;
+                html += `
+                    <div class="grid-cell grid-slot-time" data-slot-index="${slotIdx}" style="grid-row: ${slotIdx + 2};">
+                       <span class="content-normal">${startTime}</span>
+                       <span class="content-collapsed"></span>
+                    </div>
+                `;
+            }
 
-                try {
-                    const response = await fetch('{{ url_for("api_generate") }}', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ schedule_input: scheduleInput.value })
-                    });
+            for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+                const maxCols = data.max_day_cols[dayIdx] || 1;
+                html += `<div class="day-column-container" data-day-index="${dayIdx}" style="grid-column: ${dayIdx + 2}; grid-row: 2 / span 48; --sub-columns: ${maxCols};"></div>`;
+            }
+            html += '</div>';
 
-                    const result = await response.json();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
 
-                    if (result.status === 'success') {
-                        currentScheduleData = result.data;
-                        renderSchedule(currentScheduleData, 'week'); // Default view to week
-                        messageDiv.innerHTML = '<p class="success">週習表生成成功！</p>';
-                        scheduleContentDiv.classList.add('visible');
+            data.day_activities.forEach((activities, dayIdx) => {
+                const dayContainer = tempDiv.querySelector(`.day-column-container[data-day-index="${dayIdx}"]`);
+                if (!dayContainer) return;
+
+                activities.forEach(activity => {
+                    const duration = activity.end_slot - activity.start_slot;
+                    const colSpan = activity.col_span || 1;
+                    const overlapClass = `overlap-${activity.col_index % 7}`; // Use modulo 7 for color cycling
+                    const activityHtml = `
+                        <div class="grid-activity has-activity ${overlapClass}"
+                             data-note="${activity.note || ''}"
+                             data-is-empty="false"
+                             data-slot-index="${activity.start_slot}"
+                             data-day-index="${activity.day}"
+                             data-end-slot="${activity.end_slot}"
+                             style="grid-row: ${activity.start_slot + 1} / span ${duration}; grid-column: ${activity.col_index + 1} / span ${colSpan};">
+                            ${activity.name}
+                        </div>
+                    `;
+                    dayContainer.innerHTML += activityHtml;
+                });
+            });
+
+            scheduleDataContainer.innerHTML = tempDiv.innerHTML;
+        }
+
+        function updateTableView() {
+            const isMobile = window.innerWidth <= 768;
+            const grid = document.querySelector(".schedule-grid");
+            if (!grid || !processedScheduleData) return;
+
+            grid.classList.remove("mobile-today-view", "mobile-full-view");
+            grid.style.gridTemplateColumns = "";
+
+            const timeSlots = Array.from(grid.querySelectorAll(".grid-slot-time"));
+            const dayContainers = Array.from(grid.querySelectorAll(".day-column-container"));
+            const allActivities = Array.from(grid.querySelectorAll(".grid-activity"));
+            const dayHeaders = Array.from(grid.querySelectorAll(".grid-header"));
+
+            timeSlots.forEach(slot => {
+                slot.classList.remove("row-expandable", "is-collapsed-merged", "cell-hidden-by-collapse");
+                slot.style.display = 'flex';
+                slot.querySelector('.content-normal').style.display = 'flex';
+                slot.querySelector('.content-collapsed').style.display = 'none';
+                slot.querySelector('.content-collapsed').textContent = '';
+                delete slot.dataset.groupStart;
+                delete slot.dataset.groupEnd;
+            });
+            allActivities.forEach(activity => activity.classList.remove("activity-hidden-by-collapse"));
+            dayContainers.forEach(container => {
+                container.classList.remove("day-hidden");
+                container.style.gridColumn = '';
+            });
+            dayHeaders.forEach(header => {
+                header.classList.remove("day-hidden");
+                header.style.gridColumn = '';
+            });
+
+            if (isMobile && currentViewMode === "today") {
+                document.getElementById("toggleViewBtn").textContent = "顯示整週";
+                const mobileSubCols = processedScheduleData.max_day_cols[currentDayIndex] || 1;
+                grid.style.setProperty('--mobile-sub-columns', mobileSubCols);
+                grid.classList.add("mobile-today-view");
+                grid.style.gridTemplateColumns = `60px repeat(var(--mobile-sub-columns), 1fr)`;
+
+                dayContainers.forEach(container => {
+                    if (container.dataset.dayIndex != currentDayIndex) {
+                        container.classList.add("day-hidden");
                     } else {
-                        messageDiv.innerHTML = `<p class="error">${result.message || '生成失敗，請檢查您的輸入格式。'}</p>`;
-                        scheduleContentDiv.classList.remove('visible');
+                        container.style.gridColumn = '2 / span var(--mobile-sub-columns)';
                     }
-                } catch (error) {
-                    console.error('Error generating schedule:', error);
-                    messageDiv.innerHTML = '<p class="error">發生網路錯誤，請稍後再試。</p>';
-                    scheduleContentDiv.classList.remove('visible');
+                });
+                dayHeaders.forEach(header => {
+                    if (header.dataset.dayIndex != currentDayIndex) {
+                        header.classList.add("day-hidden");
+                    } else {
+                        header.style.gridColumn = '2 / -1';
+                    }
+                });
+            } else if (isMobile && currentViewMode === "full-mobile") {
+                document.getElementById("toggleViewBtn").textContent = "單日檢視";
+                grid.classList.add("mobile-full-view");
+            } else if (!isMobile) {
+                grid.style.gridTemplateColumns = "100px repeat(7, 1fr)";
+            }
+
+            const rowHeights = Array(48).fill(`${normalRowHeight}px`);
+            let currentBlock = null;
+            let collapsibleBlocks = [];
+
+            const isSlotEmptyInCurrentView = (slotIndex) => {
+                for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+                    if (isMobile && currentViewMode === "today" && dayIdx != currentDayIndex) continue;
+                    const activitiesInSlotOnDay = processedScheduleData.day_activities[dayIdx].filter(act =>
+                        act.start_slot <= slotIndex && act.end_slot > slotIndex
+                    );
+                    if (activitiesInSlotOnDay.length > 0) return false;
+                }
+                return true;
+            };
+
+            for (let i = 0; i < timeSlots.length; i++) {
+                const slotIndex = parseInt(timeSlots[i].dataset.slotIndex);
+                if (isSlotEmptyInCurrentView(slotIndex)) {
+                    if (currentBlock === null) {
+                        currentBlock = { startSlotIdx: i, endSlotIdx: i };
+                    } else {
+                        currentBlock.endSlotIdx = i;
+                    }
+                } else {
+                    if (currentBlock !== null) {
+                        if (currentBlock.endSlotIdx > currentBlock.startSlotIdx) {
+                            collapsibleBlocks.push(currentBlock);
+                        }
+                        currentBlock = null;
+                    }
+                }
+            }
+            if (currentBlock !== null && currentBlock.endSlotIdx > currentBlock.startSlotIdx) {
+                collapsibleBlocks.push(currentBlock);
+            }
+
+            collapsibleBlocks.forEach(block => {
+                const headerSlotEl = timeSlots[block.startSlotIdx];
+                if (!headerSlotEl) return;
+                const isExpanded = headerSlotEl.classList.contains('expanded'); // Check if it's already expanded
+                
+                headerSlotEl.classList.add("row-expandable");
+                headerSlotEl.dataset.groupStart = timeSlots[block.startSlotIdx].dataset.slotIndex;
+                headerSlotEl.dataset.groupEnd = timeSlots[block.endSlotIdx].dataset.slotIndex;
+
+                if (!isExpanded) { // Only collapse if not already expanded
+                    headerSlotEl.classList.add("is-collapsed-merged");
+                    const startTimeText = timeSlots[block.startSlotIdx].querySelector('.content-normal').textContent.trim();
+                    const endSlotIndex = parseInt(timeSlots[block.endSlotIdx].dataset.slotIndex) + 1;
+                    const endTime = `${String(Math.floor(endSlotIndex / 2)).padStart(2, '0')}:${String((endSlotIndex % 2) * 30).padStart(2, '0')}`;
+                    headerSlotEl.querySelector('.content-collapsed').textContent = `${startTimeText} - ${endTime}`;
+                    headerSlotEl.querySelector('.content-normal').style.display = 'none';
+                    headerSlotEl.querySelector('.content-collapsed').style.display = 'inline';
+
+                    for (let k = block.startSlotIdx + 1; k <= block.endSlotIdx; k++) {
+                        if (timeSlots[k]) timeSlots[k].classList.add("cell-hidden-by-collapse");
+                    }
+                    
+                    rowHeights[block.startSlotIdx] = `${collapsedBlockHeight}px`;
+                    for (let k = block.startSlotIdx + 1; k <= block.endSlotIdx; k++) {
+                        rowHeights[k] = `0px`;
+                    }
+                } else { // If expanded, ensure it stays expanded but still gets expandable class
+                    // Nothing specific needed here, default rowHeight applies, other slots visible
                 }
             });
 
-            // --- Schedule Rendering ---
-            function renderSchedule(data, view = 'week') {
-                scheduleDataDiv.innerHTML = ''; // Clear previous
-                const gridContainer = document.createElement('div');
-                gridContainer.className = `schedule-grid ${view === 'day' ? 'mobile-today-view' : 'mobile-full-view'}`;
-
-                // Set grid columns based on max columns for each day (important for mobile)
-                let totalCols = 1; // Start with 1 for time column
-                if (view === 'week' || window.innerWidth <= 768) { // On desktop, always show 7 days + time
-                    totalCols = 8;
-                } else { // On mobile, show only current day + time
-                    totalCols = 2; // Time column + 1 day column
-                }
-                gridContainer.style.gridTemplateColumns = `100px repeat(${totalCols - 1}, 1fr)`;
+            grid.style.gridTemplateRows = `auto ${rowHeights.join(' ')}`;
+            document.getElementById("currentDayDisplay").textContent = dayNames[currentDayIndex];
+            document.getElementById("prevDay").disabled = (currentDayIndex === 0 && currentViewMode === "today");
+            document.getElementById("nextDay").disabled = (currentDayIndex === 6 && currentViewMode === "today");
+        }
 
 
-                // --- Render Header ---
-                const timeHeader = document.createElement('div');
-                timeHeader.className = 'grid-time-header';
-                timeHeader.textContent = '時間';
-                gridContainer.appendChild(timeHeader);
+        async function performExport(type) {
+            const grid = document.querySelector('.schedule-grid');
+            const button = document.getElementById(`export${type}Btn`);
+            // --- MODIFIED: Update button text content for image buttons ---
+            const buttonTextSpan = button.querySelector('span'); 
+            const originalButtonText = buttonTextSpan ? buttonTextSpan.textContent : button.textContent;
+            if (buttonTextSpan) buttonTextSpan.textContent = "生成中..."; else button.textContent = "生成中...";
+            // ---
 
-                const dayHeaders = ["一", "二", "三", "四", "五", "六", "日"];
-                for (let i = 0; i < 7; i++) {
-                    const header = document.createElement('div');
-                    header.className = 'grid-header';
-                    header.textContent = dayHeaders[i];
-                    gridContainer.appendChild(header);
-                }
+            button.disabled = true;
 
-                // --- Render Time Slots and Activities ---
-                const numSlots = 48; // 24 hours * 2 slots/hour
-                for (let slot = 0; slot < numSlots; slot++) {
-                    // --- Time Slot Cell ---
-                    const timeSlot = document.createElement('div');
-                    timeSlot.className = 'grid-slot-time';
-                    timeSlot.dataset.slot = slot;
+            grid.classList.add('is-printing');
+            grid.classList.remove('mobile-today-view', 'mobile-full-view');
+            grid.style.gridTemplateColumns = "100px repeat(7, 1fr)";
+            grid.style.gridTemplateRows = `auto repeat(48, ${normalRowHeight}px)`; // Ensure standard height for print
 
-                    // --- MODIFIED: Create and append time label ---
-                    const timeLabel = document.createElement('span');
-                    timeLabel.className = 'time-label';
-                    const hour = Math.floor(slot / 2);
-                    const minute = (slot % 2) * 30;
-                    timeLabel.textContent = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                    timeSlot.appendChild(timeLabel);
-                    // --- END MODIFIED ---
+            // Temporarily expand all collapsed rows for printing
+            grid.querySelectorAll('.grid-slot-time.is-collapsed-merged').forEach(el => {
+                el.classList.add('expanded'); // Mark as expanded
+            });
 
-                    // Add row-expandable class if it's the start of a merged block (for interactivity)
-                    if (currentScheduleData && currentScheduleData.day_activities.flat().some(act => act.start_slot === slot && (act.end_slot - act.start_slot) > 1)) {
-                        // This is a simplified check; a more robust approach would track collapsed blocks
-                        // For now, we'll assume any block spanning more than one slot might be expandable
+            grid.querySelectorAll('.grid-slot-time, .grid-activity').forEach(el => {
+                 // Keep row-expandable class for collapse/expand logic after print
+                 el.classList.remove("is-collapsed-merged", "cell-hidden-by-collapse", "activity-hidden-by-collapse");
+                 el.style.display = ''; // Reset display style
+                 if(el.querySelector('.content-normal')) {
+                     el.querySelector('.content-normal').style.display = 'flex'; // Show normal time
+                     el.querySelector('.content-collapsed').style.display = 'none'; // Hide collapsed time
+                 }
+            });
+
+
+            try {
+                // Wait for potential layout changes after removing classes
+                await new Promise(resolve => setTimeout(resolve, 50)); 
+
+                const canvas = await html2canvas(grid, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                const link = document.createElement('a');
+                if (type === 'Png') {
+                    link.download = 'weekly_schedule.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                } else if (type === 'Pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const imgData = canvas.toDataURL('image/png');
+                    const aspectRatio = canvas.width / canvas.height;
+                    let orientation = canvas.width > canvas.height ? 'l' : 'p';
+                    // Adjust PDF size based on canvas aspect ratio, aiming for a reasonable width/height
+                    let pdfWidth, pdfHeight;
+                    const maxWidth = 1600; // Maximum desirable PDF width in pixels
+                    const maxHeight = 1200; // Maximum desirable PDF height in pixels
+
+                    if (canvas.width > maxWidth) {
+                        pdfWidth = maxWidth;
+                        pdfHeight = maxWidth / aspectRatio;
+                    } else if (canvas.height > maxHeight) {
+                        pdfHeight = maxHeight;
+                        pdfWidth = maxHeight * aspectRatio;
+                    } else {
+                         pdfWidth = canvas.width;
+                         pdfHeight = canvas.height;
                     }
+                     // Ensure minimum size if needed
+                     if (pdfWidth < 800) { pdfWidth = 800; pdfHeight = pdfWidth / aspectRatio; }
 
-                    gridContainer.appendChild(timeSlot);
 
-                    // --- Day Columns ---
-                    for (let day = 0; day < 7; day++) {
-                        // Create day column container only once for each day
-                        let dayColumnContainer = gridContainer.querySelector(`.day-column-container.day-${day}`);
-                        if (!dayColumnContainer) {
-                            dayColumnContainer = document.createElement('div');
-                            dayColumnContainer.className = `day-column-container day-${day}`;
-                            // Set the --sub-columns CSS variable for overlap management
-                            dayColumnContainer.style.setProperty('--sub-columns', currentScheduleData ? currentScheduleData.max_day_cols[day] : 1);
-                            gridContainer.appendChild(dayColumnContainer);
-                        }
+                    // Calculate scaling factor to fit image onto PDF canvas
+                    const scaleX = pdfWidth / canvas.width;
+                    const scaleY = pdfHeight / canvas.height;
+                    const scale = Math.min(scaleX, scaleY); // Use minimum scale to fit within dimensions
 
-                        // Find activities for this slot and day
-                        let activitiesInSlot = [];
-                        if (currentScheduleData && currentScheduleData.day_activities && currentScheduleData.day_activities[day]) {
-                            activitiesInSlot = currentScheduleData.day_activities[day].filter(act => act.start_slot <= slot && act.end_slot > slot);
-                        }
+                    // Create PDF with calculated size
+                    const pdf = new jsPDF({ 
+                        orientation: pdfWidth > pdfHeight ? 'l' : 'p', 
+                        unit: 'px', 
+                        format: [pdfWidth, pdfHeight] 
+                    });
+                     // Add image scaled to fit
+                    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width * scale, canvas.height * scale);
+                    pdf.save('weekly_schedule.pdf');
+                }
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('導出失敗，請查看控制台日誌。');
+            } finally {
+                grid.classList.remove('is-printing');
+                // Restore expanded state for collapsible rows after printing
+                grid.querySelectorAll('.grid-slot-time.expanded').forEach(el => {
+                     el.classList.remove('expanded'); // Remove temporary expanded class
+                });
+                updateTableView(); // Restore normal view state, including collapse
+                // --- MODIFIED: Restore button text ---
+                 if (buttonTextSpan) buttonTextSpan.textContent = originalButtonText; else button.textContent = originalButtonText;
+                // ---
+                button.disabled = false;
+            }
+        }
 
-                        // Render activities or empty space
-                        if (activitiesInSlot.length > 0) {
-                            // Sort activities to ensure correct stacking and placement within the slot
-                            activitiesInSlot.sort((a, b) => a.col_index - b.col_index);
+        function renderAiMessage(text) {
+            const container = document.createDocumentFragment();
+            const scheduleRegex = /```schedule\n([\s\S]*?)\n```/g;
+            let lastIndex = 0;
+            let match;
 
-                            activitiesInSlot.forEach(activity => {
-                                // Only render the activity if it starts at this slot
-                                if (activity.start_slot === slot) {
-                                    const activityElement = document.createElement('div');
-                                    activityElement.className = `grid-activity overlap-${activity.day % 7} overlap-cols-${activity.total_cols_in_group} col-${activity.col_index}`;
-                                    
-                                    // Calculate row span
-                                    const rowSpan = activity.end_slot - activity.start_slot;
-                                    activityElement.style.gridRow = `${slot + 2} / span ${rowSpan}`; // +2 because row 1 is header, and slot 0 is row 2
-                                    activityElement.style.gridColumn = `1 / span ${activity.col_span}`; // Span across the calculated columns
+            while ((match = scheduleRegex.exec(text)) !== null) {
+                if (match.index > lastIndex) {
+                    const textNode = document.createElement('span');
+                    textNode.innerHTML = text.substring(lastIndex, match.index).replace(/\n/g, '<br>');
+                    container.appendChild(textNode);
+                }
+                const scheduleContent = match[1];
+                const scheduleBlock = document.createElement('div');
+                scheduleBlock.className = 'ai-schedule-block';
+                scheduleBlock.textContent = scheduleContent;
+                container.appendChild(scheduleBlock);
+                lastIndex = scheduleRegex.lastIndex;
+            }
+            if (lastIndex < text.length) {
+                const textNode = document.createElement('span');
+                textNode.innerHTML = text.substring(lastIndex).replace(/\n/g, '<br>');
+                container.appendChild(textNode);
+            }
+            return container;
+        }
 
-                                    activityElement.textContent = activity.name;
-                                    activityElement.dataset.note = activity.note || '';
-                                    activityElement.dataset.day = day;
-                                    activityElement.dataset.startSlot = activity.start_slot;
-                                    activityElement.dataset.endSlot = activity.end_slot;
+        function addMessageToChat(sender, text) {
+            const messageElement = document.createElement('div');
+            const classes = sender.split(' ');
+            messageElement.classList.add('message', ...classes);
+            if (sender.includes('ai') && !sender.includes('typing')) {
+                const content = renderAiMessage(text);
+                messageElement.appendChild(content);
+            } else {
+                messageElement.innerHTML = text.replace(/\n/g, '<br>');
+            }
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return messageElement;
+        }
 
-                                    // Add tooltip event listeners
-                                    activityElement.addEventListener('mouseover', handleMouseOver);
-                                    activityElement.addEventListener('mouseout', handleMouseOut);
+        // --- MODIFIED: 修改 parseAndApplySchedule 函數 ---
+        function parseAndApplySchedule(text) {
+            const scheduleRegex = /```schedule\n([\s\S]*?)\n```/;
+            const match = text.match(scheduleRegex);
+            if (match && match[1]) {
+                const newEntries = match[1].trim();
+                scheduleTextarea.value = newEntries + '\n'; // Add a newline at the end
+                const notification = addMessageToChat('ai', '我已將您的週習表**替換**為上述內容，並正在為您生成圖表...');
+                
+                // Automatically trigger the schedule generation
+                generateBtn.click(); 
+                
+                // The enable/disable logic is now primarily handled by the scheduleForm submit listener.
+                // It will re-enable the chat input *after* schedule generation finishes.
 
-                                    // Add click listener for mobile expansion/collapse
-                                    activityElement.addEventListener('click', handleActivityClick);
+                // Remove the temporary notification after a delay
+                 setTimeout(() => {
+                     notification.style.transition = 'opacity 0.5s';
+                     notification.style.opacity = '0';
+                     setTimeout(() => notification.remove(), 500);
+                 }, 4000);
 
-                                    dayColumnContainer.appendChild(activityElement);
-                                }
-                            });
+            } else {
+                 // If AI reply didn't contain a schedule block, re-enable chat input immediately
+                 chatInput.disabled = false;
+                 chatForm.querySelector('button[type="submit"]').disabled = false;
+                 chatInput.focus(); // Let the user continue typing
+            }
+        }
+
+
+        // --- Tooltip Logic ---
+        let tooltipVisible = false;
+        let activeTooltipTarget = null;
+        const showTooltip = (target, event) => {
+            const note = target.dataset.note;
+            if (!note) return;
+            if (tooltipVisible && activeTooltipTarget && activeTooltipTarget !== target) hideTooltip();
+            tooltip.innerHTML = note;
+            tooltip.classList.add('visible');
+            tooltipVisible = true;
+            activeTooltipTarget = target;
+            updateTooltipPosition(event);
+        };
+        const hideTooltip = () => {
+            tooltip.classList.remove('visible');
+            tooltipVisible = false;
+            activeTooltipTarget = null;
+        };
+        const updateTooltipPosition = (event) => {
+            if (!tooltipVisible || !activeTooltipTarget) return;
+            const offsetX = 15, offsetY = 15;
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const vpWidth = window.innerWidth, vpHeight = window.innerHeight;
+            let x = event.clientX + offsetX, y = event.clientY + offsetY;
+            
+            // Adjust position if it goes off screen
+            if (x + tooltipRect.width > vpWidth - 10) x = event.clientX - tooltipRect.width - offsetX;
+            if (y + tooltipRect.height > vpHeight - 10) y = event.clientY - tooltipRect.height - offsetY;
+            // Ensure it's not too close to the edge
+            if (x < 5) x = 5;
+            if (y < 5) y = 5;
+
+            tooltip.style.left = `${x}px`;
+            tooltip.style.top = `${y}px`;
+        };
+
+        // --- 事件監聽器綁定 ---
+
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', toggleTheme);
+        }
+        window.addEventListener('themeChanged', () => {
+            updateCssVariables();
+            if (processedScheduleData) {
+                updateTableView(); // Re-render or update if schedule exists
+            }
+        });
+
+        if (scheduleForm) {
+            scheduleForm.addEventListener("submit", async function(event) {
+                event.preventDefault();
+                
+                const generateBtn = document.getElementById("generateBtn");
+                const messageDiv = document.getElementById("message");
+
+                generateBtn.disabled = true;
+                generateBtn.textContent = "生成中...";
+                messageDiv.innerHTML = '<div class="loading">正在解析語法並生成週習表...</div>';
+                document.getElementById("scheduleContent").classList.remove("visible");
+                
+                // Disable chat input while generating schedule
+                chatInput.disabled = true;
+                chatForm.querySelector('button[type="submit"]').disabled = true;
+
+
+                try {
+                    const response = await fetch("/api/generate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ schedule_input: scheduleTextarea.value }),
+                    });
+                    const result = await response.json();
+                    if (result.status === "success") {
+                        messageDiv.innerHTML = '<div class="success">週習表生成成功！</div>';
+                        renderScheduleGrid(result.data); // This updates global processedScheduleData and saves it
+                        document.getElementById("scheduleContent").classList.add("visible");
+                        document.getElementById("exportContainer").style.display = "flex";
+                        setupMobileView();
+                    } else {
+                        messageDiv.innerHTML = `<div class="error">生成失敗: ${result.message}</div>`;
+                        // On failure, save the input text but clear the processed data state
+                         processedScheduleData = null;
+                         storageManager.saveGlobalSchedule(scheduleTextarea.value, null);
+                    }
+                } catch (error) {
+                    messageDiv.innerHTML = `<div class="error">發生錯誤: ${error.message}</div>`;
+                    // On error, save input text but clear processed data state
+                    processedScheduleData = null;
+                    storageManager.saveGlobalSchedule(scheduleTextarea.value, null);
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = "生成週習表";
+                    
+                    // Re-enable chat input unless usage limit was reached
+                    if (chatInput.placeholder !== "已達使用上限") {
+                        chatInput.disabled = false;
+                        chatForm.querySelector('button[type="submit"]').disabled = false;
+                        chatInput.focus(); // Return focus to chat input
+                    }
+                }
+            });
+        }
+
+        document.getElementById("exportPngBtn")?.addEventListener("click", () => performExport("Png"));
+        document.getElementById("exportPdfBtn")?.addEventListener("click", () => performExport("Pdf"));
+        // Modify ICS export to use current schedule input from textarea for potential config options
+         document.getElementById("exportIcsBtn")?.addEventListener("click", () => {
+              const scheduleInput = scheduleTextarea.value;
+              // We don't need to send the processedData, the backend parses the input again
+              window.location.href = `/api/export/ics?schedule_input=${encodeURIComponent(scheduleInput)}`;
+         });
+        
+        document.getElementById("prevDay")?.addEventListener("click", () => { if (currentDayIndex > 0) { currentDayIndex--; updateTableView(); } });
+        document.getElementById("nextDay")?.addEventListener("click", () => { if (currentDayIndex < 6) { currentDayIndex++; updateTableView(); } });
+        document.getElementById("toggleViewBtn")?.addEventListener("click", () => { if (window.innerWidth <= 768) { currentViewMode = (currentViewMode === "today") ? "full-mobile" : "today"; updateTableView(); } });
+        
+        window.addEventListener("resize", setupMobileView);
+
+        if (scheduleDataContainer) {
+            scheduleDataContainer.addEventListener('mouseover', (event) => {
+                if (window.innerWidth > 768) { // Only show tooltip on hover on desktop
+                    const target = event.target.closest('.grid-activity[data-note]');
+                    if (target && !target.classList.contains('activity-hidden-by-collapse')) {
+                        showTooltip(target, event);
+                    }
+                }
+            });
+
+            scheduleDataContainer.addEventListener('mouseout', (event) => {
+                if (window.innerWidth > 768) { // Only hide tooltip on mouseout on desktop
+                    const target = event.target.closest('.grid-activity[data-note]');
+                    if (target) hideTooltip();
+                }
+            });
+
+            scheduleDataContainer.addEventListener('mousemove', (event) => {
+                if (window.innerWidth > 768) updateTooltipPosition(event); // Update position only on desktop
+            });
+
+            scheduleDataContainer.addEventListener('click', (event) => {
+                // Mobile Tooltip on click
+                if (window.innerWidth <= 768) {
+                    const target = event.target.closest('.grid-activity[data-note]');
+                    if (target && !target.classList.contains('activity-hidden-by-collapse')) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (tooltipVisible && activeTooltipTarget === target) {
+                            hideTooltip();
                         } else {
-                           // Add empty placeholder if needed to maintain grid structure, though JS CSS Grid handles empty cells well
+                            showTooltip(target, event);
                         }
+                    } else if (tooltipVisible) {
+                        // Hide tooltip if clicked outside an activity on mobile
+                        hideTooltip();
                     }
                 }
                 
-                // Apply row span for collapsed/merged rows (simplified for now)
-                // More complex logic would be needed to accurately identify and mark merged blocks.
-                // The current CSS is set up to handle .row-expandable on .grid-slot-time
-
-                scheduleDataDiv.appendChild(gridContainer);
-                updateMobileViewControls();
-            }
-
-            // --- Event Handlers for Tooltip and Activity Interaction ---
-            const tooltip = document.getElementById('activity-tooltip');
-
-            function handleMouseOver(event) {
-                const activityElement = event.target;
-                if (activityElement.classList.contains('grid-activity')) {
-                    const note = activityElement.dataset.note;
-                    const day = dayNames[parseInt(activityElement.dataset.day)];
-                    const startSlot = parseInt(activityElement.dataset.startSlot);
-                    const endSlot = parseInt(activityElement.dataset.endSlot);
-
-                    let startTime = '';
-                    let endTime = '';
-
-                    const startHour = Math.floor(startSlot / 2);
-                    const startMinute = (startSlot % 2) * 30;
-                    startTime = `${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`;
-
-                    const endHour = Math.floor(endSlot / 2);
-                    const endMinute = (endSlot % 2) * 30;
-                    endTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
-
-                    let tooltipContent = `${activityElement.textContent} (${day} ${startTime} - ${endTime})`;
-                    if (note) {
-                        tooltipContent += `\n\n備註：\n${note}`;
-                    }
-                    
-                    tooltip.textContent = tooltipContent;
-                    tooltip.classList.add('visible');
-
-                    // Position tooltip
-                    const rect = activityElement.getBoundingClientRect();
-                    tooltip.style.top = `${rect.top + window.scrollY - tooltip.offsetHeight - 5}px`; // Above the element
-                    tooltip.style.left = `${rect.left + window.scrollX + rect.width / 2 - tooltip.offsetWidth / 2}px`; // Centered horizontally
-                    
-                    // Adjust if tooltip goes off screen
-                    if (tooltip.offsetLeft < 0) {
-                        tooltip.style.left = '5px';
-                    } else if (tooltip.offsetLeft + tooltip.offsetWidth > window.innerWidth) {
-                        tooltip.style.left = `${window.innerWidth - tooltip.offsetWidth - 5}px`;
+                // Collapse/Expand Rows (applies to both desktop and mobile)
+                const expandableRow = event.target.closest(".grid-slot-time.row-expandable");
+                if (expandableRow) {
+                    expandableRow.classList.toggle("expanded");
+                    updateTableView(); // Re-calculate layout after collapse/expand
+                    // Hide tooltip if the clicked activity is now hidden by collapse
+                    if (tooltipVisible && activeTooltipTarget && activeTooltipTarget.classList.contains('activity-hidden-by-collapse')) {
+                        hideTooltip();
                     }
                 }
+            });
+        }
+        
+        // Hide tooltip on body click if visible (primarily for mobile click-to-show)
+        document.body.addEventListener('click', (event) => {
+            if (tooltipVisible) {
+                // Hide if clicked outside the tooltip itself and outside a clickable activity (on mobile)
+                // On desktop, mouseout handles hiding.
+                 const isMobileClick = window.innerWidth <= 768;
+                 const clickedActivity = event.target.closest('.grid-activity[data-note]');
+
+                 if (!tooltip.contains(event.target) && !(isMobileClick && clickedActivity) ) {
+                     hideTooltip();
+                 }
             }
+        }, true);
 
-            function handleMouseOut() {
-                tooltip.classList.remove('visible');
-            }
-            
-            function handleActivityClick(event) {
-                const activityElement = event.target;
-                if (activityElement.classList.contains('grid-activity')) {
-                    // For mobile, we might want to expand the row or show more details
-                    // For now, let's just log it or trigger the tooltip directly if needed
-                    console.log('Activity clicked:', activityElement.textContent);
-                    
-                    // Example: If you want to toggle expansion (requires more sophisticated CSS/JS for row merging)
-                    // This part is complex and usually involves managing `grid-row-start` and `grid-row-end` properties
-                }
-            }
 
-            // --- Mobile View Controls ---
-            const prevDayBtn = document.getElementById('prevDay');
-            const nextDayBtn = document.getElementById('nextDay');
-            const currentDayDisplay = document.getElementById('currentDayDisplay');
-            const toggleViewBtn = document.getElementById('toggleViewBtn');
-
-            function updateMobileViewControls() {
-                const isMobile = window.innerWidth <= 768;
-                const scheduleGrid = document.querySelector('.schedule-grid');
-
-                if (!scheduleGrid) return;
-
-                if (isMobile) {
-                    if (currentView === 'day') {
-                        // Show only current day
-                        toggleViewBtn.textContent = '顯示整週';
-                        currentDayDisplay.textContent = `週${dayNames[currentDayIndex]} (${new Date().toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })})`;
-                        
-                        // Hide other day columns
-                        for (let day = 0; day < 7; day++) {
-                            const dayColumn = scheduleGrid.querySelector(`.day-column-container.day-${day}`);
-                            if (dayColumn) {
-                                if (day === currentDayIndex) {
-                                    dayColumn.classList.remove('day-hidden');
-                                } else {
-                                    dayColumn.classList.add('day-hidden');
-                                }
-                            }
-                            // Also hide corresponding headers
-                            const dayHeader = scheduleGrid.querySelector(`.grid-header:nth-of-type(${day + 2})`); // +2 because first is time header
-                            if (dayHeader) {
-                                if (day === currentDayIndex) {
-                                    dayHeader.classList.remove('day-hidden');
-                                } else {
-                                    dayHeader.classList.add('day-hidden');
-                                }
-                            }
-                        }
-                         // Adjust grid columns for single day view
-                         scheduleGrid.style.gridTemplateColumns = `100px 1fr`;
-
-                    } else { // 'week' view
-                        toggleViewBtn.textContent = '顯示今天';
-                        // Reset all day columns and headers
-                        for (let day = 0; day < 7; day++) {
-                            const dayColumn = scheduleGrid.querySelector(`.day-column-container.day-${day}`);
-                            if (dayColumn) dayColumn.classList.remove('day-hidden');
-                            const dayHeader = scheduleGrid.querySelector(`.grid-header:nth-of-type(${day + 2})`);
-                            if (dayHeader) dayHeader.classList.remove('day-hidden');
-                        }
-                        // Adjust grid columns for full week view
-                        scheduleGrid.style.gridTemplateColumns = `100px repeat(7, 1fr)`;
-                    }
-                } else {
-                    // Desktop view, always show full week
-                    toggleViewBtn.style.display = 'none'; // Hide toggle button on desktop
-                    currentDayDisplay.style.display = 'none'; // Hide day display
-                    prevDayBtn.style.display = 'none';
-                    nextDayBtn.style.display = 'none';
-                    
-                    // Ensure all days are visible
-                     for (let day = 0; day < 7; day++) {
-                        const dayColumn = scheduleGrid.querySelector(`.day-column-container.day-${day}`);
-                        if (dayColumn) dayColumn.classList.remove('day-hidden');
-                        const dayHeader = scheduleGrid.querySelector(`.grid-header:nth-of-type(${day + 2})`);
-                        if (dayHeader) dayHeader.classList.remove('day-hidden');
-                    }
-                    scheduleGrid.style.gridTemplateColumns = `100px repeat(7, 1fr)`; // Reset to 7 days
-                }
-            }
-
-            toggleViewBtn.addEventListener('click', () => {
-                if (window.innerWidth <= 768) { // Only switch view mode on mobile
-                    currentView = currentView === 'day' ? 'week' : 'day';
-                    renderSchedule(currentScheduleData, currentView);
-                }
-            });
-
-            prevDayBtn.addEventListener('click', () => {
-                if (currentView === 'day' && window.innerWidth <= 768) {
-                    currentDayIndex = (currentDayIndex - 1 + 7) % 7;
-                    renderSchedule(currentScheduleData, currentView);
-                }
-            });
-
-            nextDayBtn.addEventListener('click', () => {
-                if (currentView === 'day' && window.innerWidth <= 768) {
-                    currentDayIndex = (currentDayIndex + 1) % 7;
-                    renderSchedule(currentScheduleData, currentView);
-                }
-            });
-
-            // --- Export Functionality ---
-            exportPngBtn.addEventListener('click', async () => {
-                const scheduleGrid = document.getElementById('scheduleData');
-                if (!scheduleGrid || !currentScheduleData) return;
-
-                // Apply printing styles for consistent export
-                document.body.classList.add('is-printing');
-                scheduleGrid.classList.add('is-printing');
-
-                try {
-                    const canvas = await html2canvas(scheduleGrid, {
-                        scale: 2, // Higher scale for better quality
-                        useCORS: true, // Allow loading external images/fonts if any
-                        logging: true,
-                        allowTaint: true, // Try to allow tainting if CORS is an issue
-                        backgroundColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1a1a1a' : '#f5f5f5', // Match surface color
-                        scrollX: 0, // Capture the whole element, not just visible part
-                        scrollY: 0,
-                        width: scheduleGrid.scrollWidth, // Ensure correct width
-                        height: scheduleGrid.scrollHeight // Ensure correct height
-                    });
-                    const imgData = canvas.toDataURL('image/png');
-                    const link = document.createElement('a');
-                    link.download = 'weekly_schedule.png';
-                    link.href = imgData;
-                    link.click();
-                } catch (error) {
-                    console.error('Error exporting to PNG:', error);
-                    messageDiv.innerHTML = '<p class="error">導出 PNG 失敗，請重試。</p>';
-                } finally {
-                    document.body.classList.remove('is-printing');
-                    scheduleGrid.classList.remove('is-printing');
-                }
-            });
-
-            exportPdfBtn.addEventListener('click', async () => {
-                const scheduleGrid = document.getElementById('scheduleData');
-                if (!scheduleGrid || !currentScheduleData) return;
-
-                document.body.classList.add('is-printing');
-                scheduleGrid.classList.add('is-printing');
-
-                try {
-                    const canvas = await html2canvas(scheduleGrid, {
-                        scale: 2,
-                        useCORS: true,
-                        logging: true,
-                        allowTaint: true,
-                        backgroundColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#1a1a1a' : '#f5f5f5',
-                        scrollX: 0,
-                        scrollY: 0,
-                        width: scheduleGrid.scrollWidth,
-                        height: scheduleGrid.scrollHeight
-                    });
-
-                    const imgWidth = 210; // A4 width in mm
-                    const pageHeight = 297; // A4 height in mm
-                    const imgHeight = canvas.height * imgWidth / canvas.width;
-                    let heightLeft = imgHeight;
-                    let position = 0;
-
-                    const doc = new jspdf.jsPDF('p', 'mm', 'a4'); // Portrait, millimeters, A4
-
-                    let pageNum = 1;
-                    while (heightLeft >= 0) {
-                        const pageCanvas = document.createElement('canvas');
-                        pageCanvas.width = canvas.width;
-                        pageCanvas.height = canvas.height;
-                        const ctx = pageCanvas.getContext('2d');
-                        ctx.drawImage(canvas, 0, position, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
-
-                        const imgData = pageCanvas.toDataURL('image/png');
-                        const imgWidthScaled = imgWidth; // Keep original width for scaling
-                        const imgHeightScaled = imgHeight * (imgWidth / canvas.width); // Scale height based on original width
-
-                        // Adjust image drawing position to fit A4 page, considering margins
-                        const margin = 10; // mm
-                        const availableWidth = imgWidth - 2 * margin;
-                        const availableHeight = pageHeight - 2 * margin;
-
-                        let drawWidth = canvas.width;
-                        let drawHeight = canvas.height;
-
-                        if (drawWidth > availableWidth) {
-                            drawHeight = drawHeight * (availableWidth / drawWidth);
-                            drawWidth = availableWidth;
-                        }
-                        if (drawHeight > availableHeight) {
-                            drawWidth = drawWidth * (availableHeight / drawHeight);
-                            drawHeight = availableHeight;
-                        }
-                        
-                        doc.addImage(imgData, 'PNG', margin, margin, drawWidth, drawHeight, '', 'FAST');
-
-                        heightLeft -= availableHeight;
-                        position += availableHeight * (canvas.height / imgHeight);
-
-                        if (heightLeft >= 0) {
-                            doc.addPage();
-                        }
-                        pageNum++;
-                    }
-
-                    doc.save('weekly_schedule.pdf');
-                } catch (error) {
-                    console.error('Error exporting to PDF:', error);
-                    messageDiv.innerHTML = '<p class="error">導出 PDF 失敗，請重試。</p>';
-                } finally {
-                    document.body.classList.remove('is-printing');
-                    scheduleGrid.classList.remove('is-printing');
-                }
-            });
-
-            exportIcsBtn.addEventListener('click', () => {
-                if (!currentScheduleData) {
-                    messageDiv.innerHTML = '<p class="error">請先生成週習表。</p>';
-                    return;
-                }
-                window.location.href = '{{ url_for("export_ics") }}';
-            });
-
-            // --- AI Chat Functionality ---
+        if (aiChatBtn) {
             aiChatBtn.addEventListener('click', () => {
-                chatModal.classList.add('is-open');
+                const currentUserEmail = storageManager.getCurrentUserEmail(); // Get current login status
+                if (currentUserEmail) { 
+                    chatModal.classList.add('is-open');
+                } else {
+                     // Redirect to login if not logged in
+                    window.location.href = "{{ url_for('login') }}";
+                }
             });
+        }
 
+        if (closeChatBtn) {
             closeChatBtn.addEventListener('click', () => {
                 chatModal.classList.remove('is-open');
             });
+        }
 
+        if (chatModal) {
+            chatModal.addEventListener('click', (e) => {
+                if (e.target === chatModal) { // Close when clicking outside the chat window (on the overlay)
+                    chatModal.classList.remove('is-open');
+                }
+            });
+        }
+
+        if (chatForm) {
             chatForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const message = chatInput.value.trim();
                 if (!message) return;
 
-                // Add user message to chat
-                const userMessageDiv = document.createElement('div');
-                userMessageDiv.className = 'message user';
-                userMessageDiv.textContent = message;
-                chatMessagesDiv.appendChild(userMessageDiv);
+                const sendButton = chatForm.querySelector('button[type="submit"]');
+                const currentUserEmail = storageManager.getCurrentUserEmail(); // Check login status *before* sending
 
+                addMessageToChat('user', message);
+                chatHistory.push({ role: 'user', parts: [message] }); // Add user message to history
                 chatInput.value = '';
-                chatInput.disabled = true; // Disable input while waiting for response
+                
+                // Disable input while waiting for AI response
+                chatInput.disabled = true;
+                sendButton.disabled = true;
 
-                // Prepare history for API call
-                const history = Array.from(chatMessagesDiv.children).map(msg => {
-                    const role = msg.classList.contains('user') ? 'user' : 'model';
-                    const content = msg.textContent;
-                    // Simple check for typing indicator, can be refined
-                    const isTyping = msg.classList.contains('ai') && msg.classList.contains('typing');
-                    if (isTyping) return null; // Skip typing indicator in history
-
-                    return { role: role, parts: [{ text: content }] };
-                }).filter(Boolean); // Remove null entries
-
-                // Add a typing indicator for AI
-                const typingIndicator = document.createElement('div');
-                typingIndicator.className = 'message ai typing';
-                typingIndicator.textContent = 'AI 正在思考...';
-                chatMessagesDiv.appendChild(typingIndicator);
-                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Scroll to bottom
-
+                const typingIndicator = addMessageToChat('ai typing', '...');
+                
                 try {
-                    const response = await fetch('{{ url_for("api_chat") }}', {
+                    const response = await fetch("{{ url_for('api_chat') }}", {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: message, history: history })
+                        // Send current schedule input value and existing processed data
+                         body: JSON.stringify({
+                              message: message,
+                              history: chatHistory,
+                              schedule_input: scheduleTextarea.value, // Provide schedule input to AI
+                              processed_data: processedScheduleData // Provide current processed data to AI (optional, depends on AI capability)
+                         }),
                     });
+                    
+                    typingIndicator.remove();
 
-                    // Remove typing indicator
-                    chatMessagesDiv.removeChild(typingIndicator);
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        const aiReplyDiv = document.createElement('div');
-                        aiReplyDiv.className = 'message ai';
-                        // Handle potential schedule blocks from AI
-                        if (data.reply && data.reply.includes('```schedule')) {
-                            const parts = data.reply.split('```schedule');
-                            if (parts.length > 1) {
-                                // Add the text before the code block
-                                aiReplyDiv.textContent = parts[0].trim();
-                                // Add the code block itself
-                                const scheduleBlockDiv = document.createElement('div');
-                                scheduleBlockDiv.className = 'ai-schedule-block';
-                                scheduleBlockDiv.textContent = parts[1].trim().replace('```', '');
-                                chatMessagesDiv.appendChild(aiReplyDiv); // Append text part first
-                                chatMessagesDiv.appendChild(scheduleBlockDiv); // Then append schedule block
-                            } else {
-                                aiReplyDiv.textContent = data.reply;
-                                chatMessagesDiv.appendChild(aiReplyDiv);
-                            }
+                    if (!response.ok) {
+                        const error = await response.json();
+                        
+                        if (response.status === 403) {
+                            addMessageToChat('ai', error.error || '您已達到使用次數上限。');
+                            chatInput.placeholder = "已達使用上限";
+                            // Keep inputs disabled
                         } else {
-                            aiReplyDiv.textContent = data.reply;
-                            chatMessagesDiv.appendChild(aiReplyDiv);
+                            addMessageToChat('ai', `發生錯誤: ${error.error || '無法連接伺服器'}`);
+                             // For other errors, re-enable input
+                            chatInput.disabled = false;
+                            sendButton.disabled = false;
                         }
-                    } else {
-                        const errorData = await response.json();
-                        let errorMessage = errorData.error || 'AI 回覆出錯。';
-                        if (response.status === 403) { // Handle usage limit reached
-                             errorMessage = `抱歉，您已達使用上限。${errorMessage}`;
-                        }
-                        const errorDiv = document.createElement('div');
-                        errorDiv.className = 'message ai';
-                        errorDiv.textContent = errorMessage;
-                        chatMessagesDiv.appendChild(errorDiv);
+                        // Do NOT save history on error
+                        return; 
                     }
+
+                    const data = await response.json();
+                    const aiReply = data.reply;
+
+                    addMessageToChat('ai', aiReply);
+                    chatHistory.push({ role: 'model', parts: [aiReply] }); // Add AI message to history
+
+                    // --- NEW: Save chat history ONLY if logged in ---
+                    if (currentUserEmail) {
+                         storageManager.saveUserChatHistory(currentUserEmail, chatHistory);
+                    } else {
+                         console.log("Not logged in, skipping chat history save.");
+                    }
+                    // --- END NEW ---
+
+                    // parseAndApplySchedule handles parsing the response for a schedule block
+                    // It also handles re-enabling the chat input if no schedule block is found
+                    parseAndApplySchedule(aiReply);
+
                 } catch (error) {
-                    console.error('Error sending message to AI:', error);
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'message ai';
-                    errorDiv.textContent = '無法連接到 AI 服務。';
-                    chatMessagesDiv.appendChild(errorDiv);
-                } finally {
+                    typingIndicator.remove();
+                    addMessageToChat('ai', `客戶端錯誤: ${error.message}`);
+                    // Client-side error, re-enable input
                     chatInput.disabled = false;
-                    chatInput.focus();
-                    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Scroll to bottom
+                    sendButton.disabled = false;
+                    // Do NOT save history on client error
+                } finally {
+                     // The re-enabling of chat input is handled by parseAndApplySchedule
+                     // or the scheduleForm submit's finally block, so nothing needed here.
                 }
             });
+        }
+        
+        // --- NEW: Handle Logout Button Click ---
+        if (logoutBtn) {
+             // Use the capture phase to ensure this runs before the default link navigation
+             logoutBtn.addEventListener('click', (e) => {
+                 const currentUserEmail = storageManager.getCurrentUserEmail();
+                 if (currentUserEmail) {
+                     console.log(`Logging out user: ${currentUserEmail}. Clearing their chat history.`);
+                     storageManager.clearUserChatHistory(currentUserEmail);
+                     // Note: Schedule data remains in global storage as per requirement.
+                 } else {
+                     console.log("Logout clicked, but no user was logged in.");
+                 }
+                 // Allow the default link navigation to /logout to proceed
+             }, true); // Set useCapture to true
+        }
+        // --- END NEW ---
 
-            // --- Initial Load ---
-            const savedSchedule = localStorage.getItem('scheduleData');
-            if (savedSchedule) {
-                try {
-                    const parsedData = JSON.parse(savedSchedule);
-                    currentScheduleData = parsedData;
-                    renderSchedule(currentScheduleData, 'week'); // Render saved data
-                    scheduleContentDiv.classList.add('visible');
-                    messageDiv.innerHTML = '<p class="success">已載入上次的週習表。</p>';
-                } catch (error) {
-                    console.error("Error loading schedule from localStorage:", error);
-                    localStorage.removeItem('scheduleData'); // Clear corrupted data
+
+        // =========================================================================
+        // --- LOCAL STORAGE INITIALIZATION ---
+        // =========================================================================
+        
+        function initializeAppFromStorage() {
+            const currentUserEmail = storageManager.getCurrentUserEmail();
+
+            // --- Always load global schedule data ---
+            const globalScheduleData = storageManager.loadGlobalSchedule();
+            if (globalScheduleData) {
+                console.log("Restoring global schedule data from localStorage...");
+                if (globalScheduleData.scheduleInput !== undefined && globalScheduleData.scheduleInput !== null) {
+                    scheduleTextarea.value = globalScheduleData.scheduleInput;
+                    console.log("Schedule input text restored.");
                 }
+                if (globalScheduleData.processedData) {
+                    console.log("Processed schedule data restored. Rendering grid...");
+                    processedScheduleData = globalScheduleData.processedData; // Update global variable
+                    document.getElementById("message").innerHTML = '<div class="success">已從儲存紀錄中還原課表！</div>';
+                    renderScheduleGrid(processedScheduleData); // Render directly
+                    document.getElementById("scheduleContent").classList.add("visible");
+                    document.getElementById("exportContainer").style.display = "flex";
+                    // Defer setupMobileView slightly to ensure grid is rendered
+                     setTimeout(setupMobileView, 10);
+                } else {
+                     // If input was saved but processedData wasn't, ensure UI reflects this
+                     document.getElementById("scheduleContent").classList.remove("visible");
+                     document.getElementById("exportContainer").style.display = "none";
+                }
+            } else {
+                console.log("No global schedule data found in localStorage. Starting with empty schedule UI.");
+                 scheduleTextarea.value = ''; // Ensure textarea is clear if nothing saved
+                 document.getElementById("scheduleContent").classList.remove("visible");
+                 document.getElementById("exportContainer").style.display = "none";
             }
-            
-            // Initial rendering and setup
-            renderSchedule(null, 'week'); // Render empty grid initially
-            updateMobileViewControls(); // Setup mobile view based on current width
 
-            // Re-check mobile view on resize
-            window.addEventListener('resize', () => {
-                updateMobileViewControls();
-            });
-        });
-    </script>
+
+            // --- Load user-specific chat history ONLY if logged in ---
+            if (currentUserEmail) {
+                console.log(`User ${currentUserEmail} logged in. Attempting to load chat history...`);
+                const userChatData = storageManager.loadUserChatHistory(currentUserEmail);
+                
+                chatMessages.innerHTML = ''; // Clear default message before potentially loading history
+
+                if (userChatData && Array.isArray(userChatData) && userChatData.length > 0) {
+                    console.log("Chat history found for user. Restoring...");
+                    chatHistory = userChatData; // Restore chat history array
+                    chatHistory.forEach(msg => {
+                         // Re-render messages (skip the first default AI message)
+                         // No need to use renderAiMessage here, addMessageToChat handles it
+                        addMessageToChat(msg.role === 'user' ? 'user' : 'ai', msg.parts[0]); 
+                    });
+                    console.log("Chat history restored.");
+                } else {
+                    console.log("No chat history found for this user or history is empty. Starting new chat.");
+                    chatHistory = []; // Ensure chatHistory is an empty array
+                    // Add the initial AI greeting
+                    addMessageToChat('ai', '你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？');
+                }
+            } else {
+                // Not logged in - ensure chat history is empty and show default greeting
+                console.log("No user logged in. Chat history will not be loaded or saved.");
+                chatHistory = []; // Ensure chatHistory is an empty array
+                chatMessages.innerHTML = ''; // Clear everything
+                addMessageToChat('ai', '你好！我是你的 AI 作息諮詢師，有什麼可以幫你的嗎？'); // Add the initial AI greeting
+            }
+
+             // Re-check mobile view setup after potential schedule rendering
+             setupMobileView();
+        }
+        
+        // --- Page Load Entry Point ---
+        updateCssVariables(); // Ensure CSS variables are set early
+        updateThemeIcon(); // Ensure theme icon is correct based on loaded theme
+        initializeAppFromStorage(); // Perform data loading and UI initialization
+
+    });
+</script>
 </body>
 </html>
