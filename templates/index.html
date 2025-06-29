@@ -639,7 +639,18 @@
             filter: var(--icon-filter);
             /* --- */
         }
-
+        #nowViewBtn {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px; /* 確保圓角與其他按鈕一致 */
+            padding: 0;
+            text-decoration: none; /* 去除連結底線 */
+        }
+        #nowViewBtn img {
+            width: 28px;
+            height: 28px;
+            filter: var(--icon-filter); /* 應用主題顏色濾鏡 */
+        }
         /* --- NEW: 聊天視窗 (Chat Modal) --- */
         .chat-modal {
             display: none; /* 由 JS class 'is-open' 控制 */
@@ -807,17 +818,14 @@ height: 100%;
 
     <!-- NEW: Tooltip Element -->
     <div id="activity-tooltip" class="activity-tooltip"></div>
-
     <!-- NEW: 統一的右上角控制項容器 -->
     <div class="top-right-controls">
         <!-- User Profile (如果已登入) -->
         {% if session %}
         <div id="userInfo" class="glass-ui-element" data-email="{{ session.email }}">
-            <!-- --- NEW: 添加顯示用戶姓名的 span --- -->
+            <!-- ... user info content ... -->
             <span class="username">{{ session.name }}</span>
-            <!-- --- NEW: 添加顯示用戶 email 的 span --- -->
             <span class="user-email">{{ session.email }}</span>
-            <!-- --- MODIFIED: 為登出按鈕添加 id --- -->
             <a href="{{ url_for('logout') }}" id="logoutBtn" class="logout-btn">登出</a>
         </div>
         {% endif %}
@@ -826,6 +834,13 @@ height: 100%;
         <div id="themeToggle" class="theme-toggle glass-ui-element">
             <img id="themeIcon" src="" alt="Toggle Theme">
         </div>
+
+        <!-- ==================== NEW: 當前活動檢視按鈕 ==================== -->
+        <!-- 注意：請確保您的 static/icon/ 資料夾中有一個名為 9.png 的圖示，或更換成您想使用的圖示 -->
+        <a href="https://tweerou.onrender.com/now" target="_blank" rel="noopener noreferrer" id="nowViewBtn" class="glass-ui-element" title="打開當前活動檢視">
+            <img src="{{ url_for('static', filename='icon/9.png') }}" alt="Now View">
+        </a>
+        <!-- ============================================================= -->
 
         <!-- AI Chat Button (使用 1.png) -->
         <button id="aiChatBtn" class="ai-chat-button glass-ui-element">
