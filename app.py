@@ -64,6 +64,16 @@ def init_db():
     print("Database initialized.")
 # --- END NEW ---
 
+@app.route('/now')
+def show_now_page():
+    # 這裡的 session 檢查是選擇性的，但建議加上
+    # 這樣可以確保只有登入的用戶才能看到
+    # if 'email' not in session:
+    #     return redirect(url_for('login'))
+        
+    # 告訴 Flask 去渲染 templates 資料夾中的 now.html 檔案
+    return render_template('now.html')
+
 
 # --- OAuth 設定 ---
 oauth = OAuth(app)
